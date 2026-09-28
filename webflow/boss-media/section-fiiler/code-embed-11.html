@@ -1146,7 +1146,16 @@
              stops.
           ================================================= */
 
-          let startY = null;
+          /* Exit point, relative to the track top, so late layout
+             shifts (images, iOS toolbar) move it with the track.
+             On mobile .section-fiiler overlaps the cards track, so
+             the track top passes long before the cards leave:
+             starting from the track top made the reveal jump to
+             the middle. */
+          let startOffset = null;
+
+          /* Cards were seen on screen in this visit */
+          let armed = false;
 
           let raf = 0;
 
@@ -1164,6 +1173,8 @@
             const gone = cardsGone();
 
             if (!gone) {
+              armed = true;
+
               setHold(0);
 
               resetReveal();
@@ -1173,9 +1184,11 @@
 
             /* Record where the cards left. Loaded deep in the
                page: fall back to the natural sticky point. */
-            if (startY === null) {
-              startY = Math.min(scrollY, geo.top);
+            if (startOffset === null) {
+              startOffset = armed ? scrollY - geo.top : Math.min(0, scrollY - geo.top);
             }
+
+            const startY = geo.top + startOffset;
 
             /* Above the recorded exit point: stay blank */
             if (scrollY < startY) {
@@ -1203,6 +1216,10 @@
 
           let resizeTimer = 0;
 
+          let lastWidth = window.innerWidth;
+
+          /* Only a width change (rotation, window resize) re-reads
+             the exit point; the iOS toolbar only changes height. */
           const refresh = () => {
             if (destroyed || isMobileKeyboardOpen()) {
               return;
@@ -1213,7 +1230,13 @@
             resizeTimer = setTimeout(() => {
               setHold(0);
 
-              startY = null;
+              if (window.innerWidth !== lastWidth) {
+                lastWidth = window.innerWidth;
+
+                startOffset = null;
+
+                armed = false;
+              }
             }, 120);
           };
 

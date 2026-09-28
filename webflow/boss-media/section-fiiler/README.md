@@ -32,3 +32,15 @@ Now the scroll controller runs every frame and:
 - Reveal and hide keep the designed pace (`sticky distance x 0.88`); extra
   scroll between the start and the original end holds the clean video, so the
   hide still lands where it did before.
+
+### 4. Mobile: reveal jumped in half-way after the cards
+On tablet/mobile `.section-fiiler` overlaps the who-we-work track (`margin-top: -250vw` on tiny, `-190vw` on medium). The cards scroll sideways and stay on screen until that track ends, so `.track-filler` has already passed the top when they leave.
+
+The old start point was `min(exit scroll, track top)`, which picked the earlier track top. The reveal therefore began about 700px "late", roughly half-way (0.30 progress measured at 390px wide).
+
+Changes:
+- The start is now the scroll position where the cards actually left, stored relative to the track top (`startOffset`) so late layout shifts move it with the track.
+- If the page is loaded deep, with the cards never seen, it falls back to the old track-top rule.
+- A resize only re-reads the start point when the width changes. The iOS toolbar changes only the height and used to reset it.
+
+Desktop is unchanged: there the cards leave before the track top, which gives the same start point as before.

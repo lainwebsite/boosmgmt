@@ -61,3 +61,12 @@ Changes, all on tiny only:
 - `www-card-item-content`: removed `height`, so the card now grows with its text.
 - `www-card-image-wrapp`: `aspect-ratio: 4/3` (was 2/2.2), so the heading and the whole card fit in the sticky 100vh.
 - `www-card-item`: `height: auto` and `gap: 1em`.
+
+## Who We Work cards: equal height (medium and below)
+Cards had different heights because text length differs and the row centered them.
+
+- `www-bottom-content-track`: `align-items: stretch` (was `center`).
+- `float-card`: `display: flex`.
+- `www-bottom-content`: `align-items: stretch`.
+
+All four cards now take the height of the tallest one (checked in a Chromium replica at 390px: 342/342/342).
