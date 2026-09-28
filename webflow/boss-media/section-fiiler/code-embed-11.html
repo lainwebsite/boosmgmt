@@ -9,9 +9,11 @@
      - hard poster fallback
 
      FIX:
-     - animation starts only once .filler-media is stuck
-       (track top hits viewport top), not on viewport entry
-     - progress spans the sticky distance only
+     - reveal starts the moment the last .www-card-item leaves
+       the viewport (no blank white gap)
+     - .filler-media is held at top:0 from that moment until
+       CSS sticky takes over, so the reveal never runs while
+       the media is still scrolling in
      - DO NOT change diagonal direction
 ========================================================= -->
 
@@ -431,7 +433,8 @@
   /* =========================================================
    ENTRY
 
-   Initial boost ONLY after .filler-media becomes sticky.
+   Initial boost ONLY once the cards have left and
+   .filler-media is held at the top.
 ========================================================= */
 
   const ENTRY_PROGRESS_DESKTOP = 0.055;
@@ -961,6 +964,13 @@
 
     /* =======================================================
      SCROLL
+
+     Reveal starts the moment the last .www-card-item leaves
+     the viewport. If .track-filler has not reached the top
+     yet, .filler-media is held at top:0 with a transform
+     (visual sticky) until real CSS sticky takes over, so the
+     reveal always runs on a stuck frame and never on a
+     blank screen.
   ======================================================= */
 
     useEffect(() => {
@@ -970,7 +980,7 @@
 
       async function initScroll() {
         try {
-          const ScrollTrigger = await getScrollTrigger();
+          await getScrollTrigger().catch(() => null);
 
           if (destroyed) {
             return;
@@ -986,17 +996,53 @@
 
           const media = container.closest('.filler-media') || container;
 
+          const cardsSection = document.querySelector('.who-we-work-section');
+
+          const cards = Array.from(document.querySelectorAll('.who-we-work-section .www-card-item'));
+
           /* =================================================
-             DISTANCE
+             GEOMETRY (document coordinates)
+
+             Measured every frame: late images / fonts can
+             shift the layout after init.
           ================================================= */
 
-          const getDistance = () => {
+          const measure = (scrollY) => {
             const viewport = window.innerHeight;
 
-            /* Scroll range while .filler-media stays stuck */
-            const stickyDistance = track.offsetHeight - (media.offsetHeight || viewport);
+            const top = track.getBoundingClientRect().top + scrollY;
 
-            return Math.max(viewport * 0.5, stickyDistance * 0.88);
+            /* Scroll range while .filler-media stays stuck */
+            const stickyDistance = Math.max(0, track.offsetHeight - (media.offsetHeight || viewport));
+
+            return {
+              top,
+
+              end: top + Math.max(viewport * 0.5, stickyDistance * 0.88),
+            };
+          };
+
+          /* Cards are done only once they have left PAST the
+             viewport: off to the right (desktop horizontal
+             slide) or above the top (tablet / mobile stack).
+             Cards still below or left have not played yet. */
+          const cardsGone = () => {
+            if (!cards.length || !cardsSection) {
+              return track.getBoundingClientRect().top <= 0;
+            }
+
+            /* Not reached the cards section yet */
+            if (cardsSection.getBoundingClientRect().top > 0) {
+              return false;
+            }
+
+            const vw = window.innerWidth;
+
+            return cards.every((card) => {
+              const r = card.getBoundingClientRect();
+
+              return r.left >= vw || r.bottom <= 0;
+            });
           };
 
           /* =================================================
@@ -1006,104 +1052,104 @@
              We only shift the entry progress.
           ================================================= */
 
-          const applyProgress = (progress, forceActive = false) => {
-            if (destroyed) {
-              return;
-            }
-
+          const setReveal = (progress) => {
             const realProgress = Math.min(1, Math.max(0, progress));
 
             const mobile = matchMedia('(max-width:767px)').matches;
 
             const tablet = matchMedia('(min-width:768px) and (max-width:991px)').matches;
 
-            /* =================================================
-                 BEFORE SECTION ENTERS
+            const entryProgress = mobile ? ENTRY_PROGRESS_MOBILE : tablet ? ENTRY_PROGRESS_TABLET : ENTRY_PROGRESS_DESKTOP;
 
-                 Absolutely transparent.
-              ================================================= */
+            uniforms.uStarted.value = 1;
 
-            if (!forceActive && realProgress <= 0) {
-              uniforms.uStarted.value = 0;
+            uniforms.uReveal.value = Math.min(1, entryProgress + realProgress * (1 - entryProgress));
+          };
 
-              uniforms.uReveal.value = 0;
+          const resetReveal = () => {
+            uniforms.uStarted.value = 0;
+
+            uniforms.uReveal.value = 0;
+          };
+
+          /* =================================================
+             HOLD .filler-media AT TOP UNTIL CSS STICKY
+          ================================================= */
+
+          let holding = false;
+
+          const setHold = (offset) => {
+            if (offset < -0.5) {
+              media.style.setProperty('transform', `translate3d(0, ${offset}px, 0)`);
+
+              holding = true;
+            } else if (holding) {
+              media.style.removeProperty('transform');
+
+              holding = false;
+            }
+          };
+
+          /* =================================================
+             TICK
+
+             Runs every frame (not only on scroll): IX2 card
+             smoothing keeps moving the cards after the wheel
+             stops.
+          ================================================= */
+
+          let startY = null;
+
+          let raf = 0;
+
+          const tick = () => {
+            raf = requestAnimationFrame(tick);
+
+            if (destroyed || document.hidden) {
+              return;
+            }
+
+            const scrollY = window.scrollY;
+
+            const geo = measure(scrollY);
+
+            const gone = cardsGone();
+
+            if (!gone) {
+              setHold(0);
+
+              resetReveal();
 
               return;
             }
 
-            /* =================================================
-                 ENTRY BOOST
+            /* Record where the cards left. Loaded deep in the
+               page: fall back to the natural sticky point. */
+            if (startY === null) {
+              startY = Math.min(scrollY, geo.top);
+            }
 
-                 The reveal is still diagonal.
-                 We just start the diagonal a little further in.
-              ================================================= */
+            /* Above the recorded exit point: stay blank */
+            if (scrollY < startY) {
+              setHold(0);
 
-            const entryProgress = mobile ? ENTRY_PROGRESS_MOBILE : tablet ? ENTRY_PROGRESS_TABLET : ENTRY_PROGRESS_DESKTOP;
+              resetReveal();
 
-            const mappedProgress = entryProgress + realProgress * (1 - entryProgress);
+              return;
+            }
 
-            uniforms.uStarted.value = 1;
+            setHold(Math.min(0, scrollY - geo.top));
 
-            uniforms.uReveal.value = Math.min(1, mappedProgress);
+            const span = Math.max(1, geo.end - startY);
+
+            setReveal((scrollY - startY) / span);
           };
 
           /* =================================================
-             TRIGGER
-
-             Starts when track top hits viewport top,
-             i.e. the moment .filler-media becomes sticky.
+             START LOOP
           ================================================= */
 
-          const trigger = ScrollTrigger.create({
-            trigger: track,
-
-            start: 'top top',
-
-            end: () => `+=${getDistance()}`,
-
-            invalidateOnRefresh: true,
-
-            anticipatePin: 1,
-
-            onRefresh(self) {
-              applyProgress(self.progress, self.isActive);
-            },
-
-            onEnter(self) {
-              /*
-               * First compositor frame can still
-               * report progress = 0.
-               *
-               * forceActive means:
-               * start diagonal immediately.
-               */
-              applyProgress(self.progress, true);
-            },
-
-            onUpdate(self) {
-              applyProgress(self.progress, self.isActive);
-            },
-
-            onLeave() {
-              applyProgress(1, true);
-            },
-
-            onEnterBack(self) {
-              applyProgress(self.progress, true);
-            },
-
-            onLeaveBack() {
-              uniforms.uStarted.value = 0;
-
-              uniforms.uReveal.value = 0;
-            },
-          });
-
-          /* =================================================
-             INITIAL STATE
-          ================================================= */
-
-          applyProgress(trigger.progress, trigger.isActive);
+          tick();
 
           /* =================================================
              RESIZE / REFRESH
@@ -1119,11 +1165,9 @@
             clearTimeout(resizeTimer);
 
             resizeTimer = setTimeout(() => {
-              try {
-                ScrollTrigger.refresh();
+              setHold(0);
 
-                applyProgress(trigger.progress, trigger.isActive);
-              } catch (_) {}
+              startY = null;
             }, 120);
           };
 
@@ -1146,13 +1190,15 @@
           cleanup = () => {
             clearTimeout(resizeTimer);
 
+            cancelAnimationFrame(raf);
+
             observer?.disconnect();
 
             window.removeEventListener('resize', refresh);
 
             window.removeEventListener('orientationchange', refresh);
 
-            trigger.kill();
+            setHold(0);
           };
         } catch (error) {
           console.warn('[BOSS] Scroll controller failed:', error);

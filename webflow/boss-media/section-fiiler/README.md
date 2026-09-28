@@ -6,11 +6,21 @@ Source of the Code Embed inside `.section-fiiler` on `/boss-media`
 - `code-embed-11.original.html` — code as it was before the fix (rollback copy).
 - `code-embed-11.html` — code currently live in the Designer.
 
-## Fix: reveal started before `.filler-media` was sticky
+## Fix history
 
+### 1. Reveal started before `.filler-media` was sticky
 ScrollTrigger used `start: 'top bottom'`, so progress began as soon as `.track-filler`
-entered the viewport — a full screen before `.filler-media` (`position: sticky; top: 0`) sticks.
+entered the viewport. Changed to `start: 'top top'`.
 
-Now:
-- `start: 'top top'` — begins the moment `.filler-media` sticks.
-- End distance = sticky run (`track height - .filler-media height`) × 0.88.
+### 2. Blank white gap between the cards and the reveal
+`.section-fiiler` (`margin-top: -270vw`, `z-index: 2`) overlaps the tail of
+`.www-scroll-track` (500vw). The IX2 card slide finishes before `.track-filler`
+reaches the top, so with fix 1 the screen stayed white until real sticky.
+
+Now the scroll controller runs every frame and:
+- detects the moment every `.www-card-item` has left past the viewport
+  (off to the right on desktop, above the top on tablet/mobile) after
+  `.who-we-work-section` reached the top;
+- from that scroll position holds `.filler-media` at `top: 0` with a
+  `translate3d` until CSS sticky takes over (visual sticky, no layout change);
+- maps reveal progress from that exit point to the sticky end x 0.88.
