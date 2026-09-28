@@ -49,3 +49,6 @@ scroll restore were removed.
 `test/keyboard-collapse.test.mjs` (Playwright, mobile emulation) reproduces the collapse:
 without the guard 5982 -> 3186px, with it the document and form position stay put.
 `bosskeyboardguard-1.2.1.min.js` is the exact registered source.
+
+Confirmed fixed on iPhone. `bosskbdebug` removed from the page (still registered on the
+site, unused); page header now carries only `bosskeyboardguard` 1.2.1.
