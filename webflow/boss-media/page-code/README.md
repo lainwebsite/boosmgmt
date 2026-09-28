@@ -12,3 +12,14 @@ viewport for the keyboard shrink all of them, moving the form by thousands of pi
 3. `ScrollTrigger.config({ ignoreMobileResize: true })` after load.
 
 Registered scripts max 2000 chars, so the published copy is minified with terser.
+
+### 1.0.1 — iPhone (WebKit)
+Recording on iPhone (Chrome iOS): focusing a field jumped to the footer, closing the keyboard
+jumped far above the form.
+- Cause 1: the form sits inside `.cta-content-media-wrapp`, which stayed `position: sticky`
+  on tablet/mobile (with `height: auto`, so the sticky did nothing). WebKit mis-computes the
+  focus scroll for inputs inside sticky boxes. Designer style changed: medium breakpoint
+  (cascades to small/tiny) `position: relative; top: auto`. Desktop keeps sticky.
+- Cause 2: iOS never resizes the layout for the keyboard and restores the scroll itself;
+  the 1.0.0 restore added a second correction and overshot. 1.0.1 only restores when
+  `window.innerHeight` actually changed by > 80px while the keyboard was open.

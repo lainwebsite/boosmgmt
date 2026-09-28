@@ -17,8 +17,10 @@
       meta.setAttribute('content', `${meta.content}, interactive-widget=resizes-visual`);
     }
 
-    /* 2. Browsers that still resize (in-app webviews...): when the
-          keyboard closes, put the form back where it was. */
+    /* 2. Browsers that still resize the layout (in-app webviews...):
+          when the keyboard closes, put the form back where it was.
+          Skipped when the layout never resized (iOS): the browser
+          restores the scroll itself and a second fix overshoots. */
     if (!matchMedia('(pointer: coarse)').matches) {
       return;
     }
@@ -44,8 +46,22 @@
       session = {
         anchor,
         top: anchor.getBoundingClientRect().top,
+        height: window.innerHeight,
+        resized: false,
       };
     });
+
+    window.addEventListener(
+      'resize',
+      () => {
+        if (session && Math.abs(window.innerHeight - session.height) > 80) {
+          session.resized = true;
+        }
+      },
+      {
+        passive: true,
+      },
+    );
 
     document.addEventListener('focusout', () => {
       setTimeout(() => {
@@ -54,9 +70,13 @@
           return;
         }
 
-        const { anchor, top } = session;
+        const { anchor, top, resized } = session;
 
         session = null;
+
+        if (!resized) {
+          return;
+        }
 
         const started = performance.now();
 
