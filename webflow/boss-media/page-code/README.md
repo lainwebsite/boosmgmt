@@ -52,3 +52,16 @@ without the guard 5982 -> 3186px, with it the document and form position stay pu
 
 Confirmed fixed on iPhone. `bosskbdebug` removed from the page (still registered on the
 site, unused); page header now carries only `bosskeyboardguard` 1.2.1.
+
+## Form dropdowns (`bossformdropdown` 1.0.0, page footer)
+
+The "What are you looking to achieve?" and "Budget range" fields are Webflow Dropdown components. Their items are plain `#` links, so clicking one did not pick anything and nothing was submitted.
+
+`form-dropdown-select.js` is the readable source; `bossformdropdown-1.0.0.min.js` is the exact registered code. On an item click it:
+
+- shows the chosen text in the toggle;
+- stores the value in a hidden input, `Goal` or `Budget Range`, which is sent with the form;
+- adds `is-selected` to the dropdown and `w--current` to the chosen item;
+- closes the list.
+
+Test: `node test/form-dropdown.test.mjs`.
