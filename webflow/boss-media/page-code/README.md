@@ -34,3 +34,18 @@ Opt-in diagnostics: open the page with `?kbdebug`. Green overlay logs focus/blur
 resize, visualViewport, every scroll jump > 150px or document height change, and every
 `scrollTo` / `scrollBy` / `scrollIntoView` / `focus` call with its caller. Remove before
 going live on the custom domain.
+
+### 1.2.1 — freeze the layout while the keyboard is open (current)
+`?kbdebug` on iPhone Chrome showed the real cause: opening the keyboard shrinks the layout
+viewport (`innerHeight` 666 -> 337), so all vh sections shrink and the document drops from
+12493px to 7846px. WebKit ignores `interactive-widget`.
+
+On focus of a field (before the keyboard opens) every block whose height, margin or
+padding is >= 25% of the viewport is pinned to its current px values (`!important` inline),
+read-all-then-write-all. Released once focus leaves the fields and `innerHeight` is back
+(1.5s cap), or when the width changes (real rotation). 1.1.0's focus takeover and the
+scroll restore were removed.
+
+`test/keyboard-collapse.test.mjs` (Playwright, mobile emulation) reproduces the collapse:
+without the guard 5982 -> 3186px, with it the document and form position stay put.
+`bosskeyboardguard-1.2.1.min.js` is the exact registered source.

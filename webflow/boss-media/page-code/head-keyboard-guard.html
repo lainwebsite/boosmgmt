@@ -2,15 +2,18 @@
   /* =========================================================
      MOBILE KEYBOARD GUARD  (registered script bosskeyboardguard)
 
-     Most sections here are sized in vh (500vh, 350vh, 1050vh...)
-     and wrapped in sticky / transformed layers. The browser's own
-     "scroll the focused field into view" miscalculates on this
-     layout and throws the page far down (iPhone: to the footer).
+     Measured on iPhone Chrome (?kbdebug): opening the keyboard
+     shrinks the layout viewport (innerHeight 666 -> 337), so every
+     vh-sized section shrinks with it and the document drops from
+     12493px to 7846px. That collapse is the jump.
+
+     Fix: when a field gets focus (before the keyboard opens) pin
+     every large block to its current px size; release it once the
+     keyboard has closed and the viewport is back to its height.
   ========================================================= */
 
   (() => {
-    /* 1. Keyboard overlays the page instead of resizing it
-          (Chrome / Samsung Internet / Firefox Android). */
+    /* Keyboard overlays instead of resizing (Chromium / Firefox) */
     const meta = document.querySelector('meta[name="viewport"]');
 
     if (meta && !/interactive-widget/.test(meta.content)) {
@@ -24,142 +27,122 @@
     const FIELDS =
       'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea, select, [contenteditable="true"]';
 
-    const TYPING = 'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea';
-
     const isField = (el) => !!el && !!el.matches && el.matches(FIELDS);
 
-    /* 2. Tap on a text field: focus it ourselves with preventScroll,
-          so the browser does not jump the page. The keyboard still
-          opens (focus runs inside the tap) and the browser only pans
-          the visual viewport to show the caret. */
-    let tap = null;
+    const PROPS = ['height', 'min-height', 'max-height', 'margin-top', 'margin-bottom', 'padding-top', 'padding-bottom'];
 
-    document.addEventListener(
-      'touchstart',
-      (event) => {
-        const field = event.target.closest?.(TYPING);
+    let frozen = null;
 
-        tap = field && field !== document.activeElement ? { field, x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
-      },
-      {
-        passive: true,
-      },
-    );
+    let baseHeight = 0;
 
-    document.addEventListener(
-      'touchend',
-      (event) => {
-        if (!tap) {
-          return;
-        }
+    let baseWidth = 0;
 
-        const { field, x, y } = tap;
-
-        tap = null;
-
-        const touch = event.changedTouches[0];
-
-        /* A swipe that started on a field is a scroll, not a tap */
-        if (!touch || Math.abs(touch.clientX - x) > 10 || Math.abs(touch.clientY - y) > 10) {
-          return;
-        }
-
-        event.preventDefault();
-
-        field.focus({
-          preventScroll: true,
-        });
-      },
-      {
-        passive: false,
-      },
-    );
-
-    /* 3. Browsers that still resize the layout (in-app webviews...):
-          when the keyboard closes, put the form back where it was.
-          Skipped when the layout never resized (iOS). */
-    let session = null;
-
-    document.addEventListener('focusin', (event) => {
-      if (session || !isField(event.target)) {
+    const freeze = () => {
+      if (frozen) {
         return;
       }
 
-      const anchor = event.target.closest('form') || event.target;
+      baseHeight = window.innerHeight;
 
-      session = {
-        anchor,
-        top: anchor.getBoundingClientRect().top,
-        height: window.innerHeight,
-        resized: false,
-      };
-    });
+      baseWidth = window.innerWidth;
 
-    window.addEventListener(
-      'resize',
-      () => {
-        if (session && Math.abs(window.innerHeight - session.height) > 80) {
-          session.resized = true;
+      /* vh-driven blocks are big: >= 25vh of height, margin or padding */
+      const big = baseHeight * 0.25;
+
+      const list = [];
+
+      /* Read everything first, then write, to avoid layout thrash */
+      for (const el of document.body.querySelectorAll('*')) {
+        const cs = getComputedStyle(el);
+
+        if (cs.display === 'none' || cs.display === 'inline' || cs.display === 'contents' || cs.position === 'fixed') {
+          continue;
         }
-      },
-      {
-        passive: true,
-      },
-    );
+
+        const height = parseFloat(cs.height);
+
+        const edges = [cs.marginTop, cs.marginBottom, cs.paddingTop, cs.paddingBottom].map((v) => Math.abs(parseFloat(v) || 0));
+
+        if (!(height >= big || edges.some((v) => v >= big))) {
+          continue;
+        }
+
+        list.push([
+          el,
+          PROPS.map((p) => [p, el.style.getPropertyValue(p), el.style.getPropertyPriority(p)]),
+          [cs.height, cs.height, 'none', cs.marginTop, cs.marginBottom, cs.paddingTop, cs.paddingBottom],
+        ]);
+      }
+
+      for (const [el, , values] of list) {
+        PROPS.forEach((p, i) => el.style.setProperty(p, values[i], 'important'));
+      }
+
+      frozen = list;
+    };
+
+    const unfreeze = () => {
+      if (!frozen) {
+        return;
+      }
+
+      for (const [el, saved] of frozen) {
+        for (const [p, value, priority] of saved) {
+          if (value) {
+            el.style.setProperty(p, value, priority);
+          } else {
+            el.style.removeProperty(p);
+          }
+        }
+      }
+
+      frozen = null;
+    };
+
+    document.addEventListener('focusin', (event) => {
+      if (isField(event.target)) {
+        freeze();
+      }
+    });
 
     document.addEventListener('focusout', () => {
       setTimeout(() => {
         /* Moving to the next field keeps the keyboard open */
-        if (!session || isField(document.activeElement)) {
-          return;
-        }
-
-        const { anchor, top, resized } = session;
-
-        session = null;
-
-        if (!resized) {
+        if (!frozen || isField(document.activeElement)) {
           return;
         }
 
         const started = performance.now();
 
-        let lastKey = '';
-
-        let stableSince = started;
-
-        const settle = (now) => {
-          const key = `${window.innerHeight}|${window.visualViewport ? Math.round(window.visualViewport.height) : 0}`;
-
-          if (key !== lastKey) {
-            lastKey = key;
-
-            stableSince = now;
-          }
-
-          /* Wait until the keyboard has finished closing */
-          if (now - stableSince < 180 && now - started < 1200) {
-            requestAnimationFrame(settle);
-
-            return;
-          }
-
+        /* Release once the viewport is back to full height */
+        const wait = (now) => {
           if (isField(document.activeElement)) {
             return;
           }
 
-          const delta = anchor.getBoundingClientRect().top - top;
+          if (window.innerHeight >= baseHeight - 10 || now - started > 1500) {
+            unfreeze();
 
-          if (Math.abs(delta) > 2) {
-            window.scrollTo(0, window.scrollY + delta);
+            return;
           }
+
+          requestAnimationFrame(wait);
         };
 
-        requestAnimationFrame(settle);
-      }, 120);
+        requestAnimationFrame(wait);
+      }, 150);
     });
 
-    /* 4. ScrollTrigger must not re-measure on keyboard resize */
+    /* Real rotation changes the width; the keyboard only the height.
+       (orientationchange also fires when the keyboard makes the
+       viewport wider than tall, so it cannot be trusted here.) */
+    window.addEventListener('resize', () => {
+      if (frozen && Math.abs(window.innerWidth - baseWidth) > 40) {
+        unfreeze();
+      }
+    });
+
+    /* ScrollTrigger must not re-measure on keyboard resize */
     window.addEventListener(
       'load',
       () => {
