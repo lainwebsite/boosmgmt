@@ -1,0 +1,113 @@
+<script>
+  /* =========================================================
+     MOBILE KEYBOARD GUARD
+
+     Most sections here are sized in vh (500vh, 350vh, 1050vh...).
+     Browsers that shrink the layout viewport for the on-screen
+     keyboard shrink every one of them, so the page jumps down
+     when the keyboard opens and back up when it closes.
+  ========================================================= */
+
+  (() => {
+    /* 1. Keyboard overlays the page instead of resizing it
+          (Chrome / Samsung Internet / Firefox Android). */
+    const meta = document.querySelector('meta[name="viewport"]');
+
+    if (meta && !/interactive-widget/.test(meta.content)) {
+      meta.setAttribute('content', `${meta.content}, interactive-widget=resizes-visual`);
+    }
+
+    /* 2. Browsers that still resize (in-app webviews...): when the
+          keyboard closes, put the form back where it was. */
+    if (!matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
+
+    const isField = (el) =>
+      !!el &&
+      !!el.matches &&
+      el.matches(
+        'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea, select, [contenteditable="true"]',
+      );
+
+    const viewportKey = () => `${window.innerHeight}|${window.visualViewport ? Math.round(window.visualViewport.height) : 0}`;
+
+    let session = null;
+
+    document.addEventListener('focusin', (event) => {
+      if (session || !isField(event.target)) {
+        return;
+      }
+
+      const anchor = event.target.closest('form') || event.target;
+
+      session = {
+        anchor,
+        top: anchor.getBoundingClientRect().top,
+      };
+    });
+
+    document.addEventListener('focusout', () => {
+      setTimeout(() => {
+        /* Moving to the next field keeps the keyboard open */
+        if (!session || isField(document.activeElement)) {
+          return;
+        }
+
+        const { anchor, top } = session;
+
+        session = null;
+
+        const started = performance.now();
+
+        let lastKey = '';
+
+        let stableSince = started;
+
+        const settle = (now) => {
+          const key = viewportKey();
+
+          if (key !== lastKey) {
+            lastKey = key;
+
+            stableSince = now;
+          }
+
+          /* Wait until the keyboard has finished closing */
+          if (now - stableSince < 180 && now - started < 1200) {
+            requestAnimationFrame(settle);
+
+            return;
+          }
+
+          if (isField(document.activeElement)) {
+            return;
+          }
+
+          const delta = anchor.getBoundingClientRect().top - top;
+
+          if (Math.abs(delta) > 2) {
+            window.scrollTo(0, window.scrollY + delta);
+          }
+        };
+
+        requestAnimationFrame(settle);
+      }, 120);
+    });
+
+    /* 3. ScrollTrigger must not re-measure on keyboard resize */
+    window.addEventListener(
+      'load',
+      () => {
+        try {
+          window.ScrollTrigger?.config?.({
+            ignoreMobileResize: true,
+          });
+        } catch (_) {}
+      },
+      {
+        once: true,
+      },
+    );
+  })();
+</script>

@@ -1,0 +1,1592 @@
+<style>
+  /* =========================================================
+     BOSS 3D LOGO
+     ========================================================= */
+
+  #boss-logo {
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /*
+   * Fallback SVG sengaja tetap berada di document flow.
+   * Ini membantu #boss-logo tetap mempunyai ukuran/height
+   * meskipun Webflow breakpoint membuat height menjadi auto.
+   */
+  #boss-logo .boss-logo-fallback {
+    z-index: 1;
+
+    display: block;
+
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+
+    object-fit: contain;
+
+    opacity: 1;
+    visibility: visible;
+
+    pointer-events: none;
+
+    transition:
+      opacity 0.25s ease,
+      visibility 0.25s ease;
+  }
+
+  #boss-logo .boss-logo-canvas {
+    position: absolute;
+    z-index: 2;
+
+    inset: 0;
+
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: opacity 0.25s ease;
+  }
+
+  /*
+   * Hanya setelah Three.js benar-benar berhasil render,
+   * baru fallback disembunyikan.
+   */
+  #boss-logo.is-three-ready .boss-logo-fallback {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  #boss-logo.is-three-ready .boss-logo-canvas {
+    opacity: 1;
+  }
+</style>
+
+
+<!-- =========================================================
+     STATIC FALLBACK
+     
+     Script ini bukan module supaya tetap berjalan bahkan jika
+     import-map / Three.js gagal dimuat pada browser tertentu.
+     ========================================================= -->
+
+<script>
+  (() => {
+    const SVG_URL =
+      "https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a4cd393098274be4a428c8e_b.%201.svg";
+
+    window.__BOSS_LOGO_SVG_URL__ = SVG_URL;
+
+    function createBossLogoFallback() {
+      const container =
+        document.getElementById("boss-logo");
+
+      if (!container) return;
+
+      if (
+        container.querySelector(
+          ".boss-logo-fallback"
+        )
+      ) {
+        return;
+      }
+
+      const fallback =
+        document.createElement("img");
+
+      fallback.className =
+        "boss-logo-fallback";
+
+      fallback.src = SVG_URL;
+
+      fallback.alt = "";
+
+      fallback.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+
+      fallback.loading = "eager";
+      fallback.decoding = "async";
+
+      try {
+        fallback.fetchPriority = "high";
+      } catch (error) {}
+
+      container.prepend(fallback);
+    }
+
+    if (
+      document.readyState === "loading"
+    ) {
+      document.addEventListener(
+        "DOMContentLoaded",
+        createBossLogoFallback,
+        {
+          once: true
+        }
+      );
+    } else {
+      createBossLogoFallback();
+    }
+  })();
+</script>
+
+
+<!-- =========================================================
+     THREE.JS IMPORT MAP
+     ========================================================= -->
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
+  }
+}
+</script>
+
+
+<!-- =========================================================
+     BOSS 3D LOGO
+     ========================================================= -->
+
+<script type="module">
+  import * as THREE from "three";
+
+  import {
+    SVGLoader
+  } from "three/addons/loaders/SVGLoader.js";
+
+
+  const SVG_URL =
+    window.__BOSS_LOGO_SVG_URL__ ||
+    "https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a4cd393098274be4a428c8e_b.%201.svg";
+
+
+  const MAX_RETRIES = 3;
+
+  const RETRY_DELAY = 900;
+
+  const SVG_TIMEOUT = 8000;
+
+
+  let retryCount = 0;
+
+  let activeInstance = null;
+
+  let retryTimer = null;
+
+
+  /* =========================================================
+     WEBGL SUPPORT CHECK
+     ========================================================= */
+
+  function supportsWebGL() {
+    try {
+      const testCanvas =
+        document.createElement("canvas");
+
+      const gl =
+        testCanvas.getContext("webgl2") ||
+        testCanvas.getContext("webgl") ||
+        testCanvas.getContext(
+          "experimental-webgl"
+        );
+
+      return !!gl;
+    } catch (error) {
+      return false;
+    }
+  }
+
+
+  /* =========================================================
+     WAIT UNTIL CONTAINER HAS REAL SIZE
+     ========================================================= */
+
+  function waitForValidContainerSize(
+    container,
+    maxWait = 6000
+  ) {
+    return new Promise((resolve, reject) => {
+      const startTime =
+        performance.now();
+
+      let frame = null;
+
+      function check() {
+        const rect =
+          container.getBoundingClientRect();
+
+        const width =
+          Math.round(rect.width);
+
+        const height =
+          Math.round(rect.height);
+
+        if (
+          width >= 2 &&
+          height >= 2
+        ) {
+          resolve({
+            width,
+            height
+          });
+
+          return;
+        }
+
+        if (
+          performance.now() -
+            startTime >=
+          maxWait
+        ) {
+          reject(
+            new Error(
+              `Boss Logo container size invalid: ${width}x${height}`
+            )
+          );
+
+          return;
+        }
+
+        frame =
+          requestAnimationFrame(check);
+      }
+
+      check();
+    });
+  }
+
+
+  /* =========================================================
+     SVG LOADER WITH TIMEOUT
+     ========================================================= */
+
+  function loadSVGWithTimeout(loader) {
+    return new Promise(
+      (resolve, reject) => {
+        let finished = false;
+
+        const timeout =
+          setTimeout(() => {
+            if (finished) return;
+
+            finished = true;
+
+            reject(
+              new Error(
+                "Boss Logo SVG loading timeout."
+              )
+            );
+          }, SVG_TIMEOUT);
+
+
+        loader.load(
+          SVG_URL,
+
+          data => {
+            if (finished) return;
+
+            finished = true;
+
+            clearTimeout(timeout);
+
+            resolve(data);
+          },
+
+          undefined,
+
+          error => {
+            if (finished) return;
+
+            finished = true;
+
+            clearTimeout(timeout);
+
+            reject(error);
+          }
+        );
+      }
+    );
+  }
+
+
+  /* =========================================================
+     INIT
+     ========================================================= */
+
+  async function initBossLogo() {
+    const container =
+      document.getElementById(
+        "boss-logo"
+      );
+
+    if (!container) return;
+
+
+    /*
+     * Jangan init dua kali pada element yang sama.
+     */
+    if (
+      container.dataset
+        .bossThreeState === "loading" ||
+      container.dataset
+        .bossThreeState === "ready"
+    ) {
+      return;
+    }
+
+
+    /*
+     * Kalau device sama sekali tidak mendukung WebGL,
+     * biarkan SVG fallback yang tampil.
+     */
+    if (!supportsWebGL()) {
+      console.warn(
+        "Boss Logo: WebGL tidak tersedia. Menggunakan SVG fallback."
+      );
+
+      container.dataset
+        .bossThreeState = "fallback";
+
+      container.classList.remove(
+        "is-three-ready"
+      );
+
+      return;
+    }
+
+
+    container.dataset
+      .bossThreeState = "loading";
+
+
+    try {
+      activeInstance?.destroy?.();
+
+      activeInstance =
+        await createBossLogoInstance(
+          container
+        );
+
+      retryCount = 0;
+
+      container.dataset
+        .bossThreeState = "ready";
+    } catch (error) {
+      console.warn(
+        "Boss Logo: initialization gagal.",
+        error
+      );
+
+      container.dataset
+        .bossThreeState = "fallback";
+
+      container.classList.remove(
+        "is-three-ready"
+      );
+
+      activeInstance?.destroy?.();
+
+      activeInstance = null;
+
+      scheduleRetry();
+    }
+  }
+
+
+  /* =========================================================
+     RETRY
+     ========================================================= */
+
+  function scheduleRetry() {
+    if (
+      retryCount >= MAX_RETRIES
+    ) {
+      console.warn(
+        "Boss Logo: maximum retry tercapai. SVG fallback tetap digunakan."
+      );
+
+      return;
+    }
+
+
+    retryCount += 1;
+
+
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+    }
+
+
+    retryTimer =
+      setTimeout(() => {
+        retryTimer = null;
+
+        const container =
+          document.getElementById(
+            "boss-logo"
+          );
+
+        if (!container) return;
+
+        container.dataset
+          .bossThreeState = "";
+
+        initBossLogo();
+      }, RETRY_DELAY * retryCount);
+  }
+
+
+  /* =========================================================
+     CREATE THREE INSTANCE
+     ========================================================= */
+
+  async function createBossLogoInstance(
+    container
+  ) {
+    const isMobile =
+      window.matchMedia(
+        "(max-width: 767px)"
+      ).matches;
+
+
+    const reducedMotion =
+      window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+
+    /*
+     * Tunggu sampai wrapper benar-benar memiliki width
+     * dan height sebelum membuat ukuran renderer.
+     */
+    await waitForValidContainerSize(
+      container
+    );
+
+
+    /* ---------------------------------------------------------
+       SCENE
+       --------------------------------------------------------- */
+
+    const scene =
+      new THREE.Scene();
+
+
+    const camera =
+      new THREE.PerspectiveCamera(
+        28,
+        1,
+        0.1,
+        2000
+      );
+
+
+    /* ---------------------------------------------------------
+       RENDERER
+       --------------------------------------------------------- */
+
+    let renderer;
+
+
+    try {
+      renderer =
+        new THREE.WebGLRenderer({
+          alpha: true,
+
+          antialias:
+            !isMobile,
+
+          /*
+           * default lebih aman daripada memaksa low-power
+           * pada mobile GPU tertentu.
+           */
+          powerPreference: "default",
+
+          depth: true,
+
+          stencil: false,
+
+          failIfMajorPerformanceCaveat:
+            false
+        });
+    } catch (error) {
+      throw new Error(
+        `WebGLRenderer gagal dibuat: ${error.message}`
+      );
+    }
+
+
+    renderer.setClearColor(
+      0x000000,
+      0
+    );
+
+
+    /*
+     * Mobile dibatasi 1x agar GPU tidak bekerja terlalu berat.
+     */
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio || 1,
+        isMobile ? 1 : 1.5
+      )
+    );
+
+
+    renderer.outputColorSpace =
+      THREE.SRGBColorSpace;
+
+
+    renderer.toneMapping =
+      THREE.ACESFilmicToneMapping;
+
+
+    renderer.toneMappingExposure =
+      1.05;
+
+
+    const canvas =
+      renderer.domElement;
+
+
+    canvas.classList.add(
+      "boss-logo-canvas"
+    );
+
+
+    container.appendChild(canvas);
+
+
+    /* =========================================================
+       LIGHTING
+       ========================================================= */
+
+    const ambientLight =
+      new THREE.HemisphereLight(
+        0xf1f3f0,
+        0xaeb5b2,
+        1.9
+      );
+
+
+    scene.add(ambientLight);
+
+
+    const frontLight =
+      new THREE.DirectionalLight(
+        0xf4f5f2,
+        3
+      );
+
+
+    frontLight.position.set(
+      -40,
+      50,
+      80
+    );
+
+
+    scene.add(frontLight);
+
+
+    const sideLight =
+      new THREE.DirectionalLight(
+        0xd5dedb,
+        1.9
+      );
+
+
+    sideLight.position.set(
+      60,
+      15,
+      30
+    );
+
+
+    scene.add(sideLight);
+
+
+    const backLight =
+      new THREE.DirectionalLight(
+        0xebedea,
+        1.4
+      );
+
+
+    backLight.position.set(
+      -20,
+      -10,
+      -70
+    );
+
+
+    scene.add(backLight);
+
+
+    /* =========================================================
+       LOGO GROUP
+       ========================================================= */
+
+    const logoGroup =
+      new THREE.Group();
+
+
+    logoGroup.rotation.x =
+      THREE.MathUtils.degToRad(
+        -10
+      );
+
+
+    scene.add(logoGroup);
+
+
+    let logoMesh = null;
+
+    let destroyed = false;
+
+    let animationFrame = null;
+
+    let resizeFrame = null;
+
+    let isVisible = true;
+
+
+    /* =========================================================
+       MATERIAL
+       ========================================================= */
+
+    const faceMaterial =
+      new THREE.MeshPhysicalMaterial({
+        color: 0xe7e9e5,
+
+        metalness: 0.04,
+
+        roughness: 0.34,
+
+        clearcoat: 0.28,
+
+        clearcoatRoughness:
+          0.46
+      });
+
+
+    const sideMaterial =
+      new THREE.MeshStandardMaterial({
+        color: 0xc3c9c6,
+
+        metalness: 0.03,
+
+        roughness: 0.46,
+
+        flatShading: true
+      });
+
+
+    /* =========================================================
+       SIZE
+       ========================================================= */
+
+    function getContainerSize() {
+      const rect =
+        container.getBoundingClientRect();
+
+      return {
+        width: Math.max(
+          Math.round(rect.width),
+          0
+        ),
+
+        height: Math.max(
+          Math.round(rect.height),
+          0
+        )
+      };
+    }
+
+
+    /* =========================================================
+       CAMERA FIT
+       ========================================================= */
+
+    function fitCameraToLogo() {
+      if (
+        !logoMesh ||
+        destroyed
+      ) {
+        return;
+      }
+
+
+      const geometry =
+        logoMesh.geometry;
+
+
+      if (
+        !geometry.boundingSphere
+      ) {
+        geometry.computeBoundingSphere();
+      }
+
+
+      const sphere =
+        geometry.boundingSphere;
+
+
+      if (
+        !sphere ||
+        sphere.radius <= 0
+      ) {
+        return;
+      }
+
+
+      const radius =
+        sphere.radius;
+
+
+      const verticalFov =
+        THREE.MathUtils.degToRad(
+          camera.fov
+        );
+
+
+      const horizontalFov =
+        2 *
+        Math.atan(
+          Math.tan(
+            verticalFov / 2
+          ) * camera.aspect
+        );
+
+
+      const verticalDistance =
+        radius /
+        Math.sin(
+          verticalFov / 2
+        );
+
+
+      const horizontalDistance =
+        radius /
+        Math.sin(
+          horizontalFov / 2
+        );
+
+
+      const cameraPadding =
+        isMobile
+          ? 1.12
+          : 1.1;
+
+
+      const distance =
+        Math.max(
+          verticalDistance,
+          horizontalDistance
+        ) *
+        cameraPadding;
+
+
+      camera.position.set(
+        0,
+        0,
+        distance
+      );
+
+
+      camera.near =
+        Math.max(
+          0.1,
+          distance / 100
+        );
+
+
+      camera.far =
+        Math.max(
+          1000,
+          distance * 10
+        );
+
+
+      camera.lookAt(
+        0,
+        0,
+        0
+      );
+
+
+      camera.updateProjectionMatrix();
+    }
+
+
+    /* =========================================================
+       RESIZE
+       ========================================================= */
+
+    function resizeRenderer(
+      forceCameraFit = false
+    ) {
+      if (destroyed) {
+        return false;
+      }
+
+
+      const {
+        width,
+        height
+      } = getContainerSize();
+
+
+      if (
+        width < 2 ||
+        height < 2
+      ) {
+        return false;
+      }
+
+
+      const currentSize =
+        renderer.getSize(
+          new THREE.Vector2()
+        );
+
+
+      const sizeChanged =
+        Math.round(
+          currentSize.x
+        ) !== width ||
+        Math.round(
+          currentSize.y
+        ) !== height;
+
+
+      if (sizeChanged) {
+        renderer.setSize(
+          width,
+          height,
+          false
+        );
+      }
+
+
+      const nextAspect =
+        width / height;
+
+
+      const aspectChanged =
+        Math.abs(
+          camera.aspect -
+            nextAspect
+        ) > 0.001;
+
+
+      if (aspectChanged) {
+        camera.aspect =
+          nextAspect;
+
+        camera.updateProjectionMatrix();
+      }
+
+
+      if (
+        logoMesh &&
+        (
+          forceCameraFit ||
+          sizeChanged ||
+          aspectChanged
+        )
+      ) {
+        fitCameraToLogo();
+      }
+
+
+      return true;
+    }
+
+
+    /* =========================================================
+       RENDER
+       ========================================================= */
+
+    function renderFrame() {
+      if (destroyed) return;
+
+
+      const validSize =
+        resizeRenderer(false);
+
+
+      if (!validSize) return;
+
+
+      renderer.render(
+        scene,
+        camera
+      );
+    }
+
+
+    /* =========================================================
+       LOAD SVG
+       ========================================================= */
+
+    const loader =
+      new SVGLoader();
+
+
+    const data =
+      await loadSVGWithTimeout(
+        loader
+      );
+
+
+    if (destroyed) {
+      throw new Error(
+        "Boss Logo instance destroyed before SVG finished."
+      );
+    }
+
+
+    const allShapes = [];
+
+
+    data.paths.forEach(path => {
+      const shapes =
+        SVGLoader.createShapes(
+          path
+        );
+
+
+      shapes.forEach(shape => {
+        allShapes.push(shape);
+      });
+    });
+
+
+    if (!allShapes.length) {
+      throw new Error(
+        "SVG tidak memiliki shape yang dapat dirender."
+      );
+    }
+
+
+    /* =========================================================
+       GEOMETRY
+       ========================================================= */
+
+    const geometry =
+      new THREE.ExtrudeGeometry(
+        allShapes,
+        {
+          depth:
+            isMobile
+              ? 5
+              : 7,
+
+          bevelEnabled:
+            false,
+
+          /*
+           * Sedikit lebih ringan di mobile.
+           */
+          curveSegments:
+            isMobile
+              ? 3
+              : 6,
+
+          steps: 1
+        }
+      );
+
+
+    geometry.scale(
+      1,
+      -1,
+      1
+    );
+
+
+    geometry.center();
+
+
+    geometry.computeVertexNormals();
+
+    geometry.computeBoundingBox();
+
+    geometry.computeBoundingSphere();
+
+
+    logoMesh =
+      new THREE.Mesh(
+        geometry,
+        [
+          faceMaterial,
+          sideMaterial
+        ]
+      );
+
+
+    logoGroup.add(
+      logoMesh
+    );
+
+
+    /* =========================================================
+       FIRST RENDER
+       ========================================================= */
+
+    await waitForValidContainerSize(
+      container
+    );
+
+
+    resizeRenderer(true);
+
+    renderFrame();
+
+
+    /*
+     * IMPORTANT:
+     * Fallback baru disembunyikan setelah renderer
+     * benar-benar berhasil render.
+     */
+    container.classList.add(
+      "is-three-ready"
+    );
+
+
+    /* =========================================================
+       ANIMATION
+       ========================================================= */
+
+    const clock =
+      new THREE.Clock();
+
+
+    const rotationSpeed =
+      THREE.MathUtils.degToRad(
+        isMobile
+          ? 22
+          : 28
+      );
+
+
+    function animate() {
+      if (
+        destroyed ||
+        !isVisible ||
+        document.hidden ||
+        reducedMotion
+      ) {
+        animationFrame = null;
+
+        return;
+      }
+
+
+      animationFrame =
+        requestAnimationFrame(
+          animate
+        );
+
+
+      const delta =
+        Math.min(
+          clock.getDelta(),
+          0.05
+        );
+
+
+      logoGroup.rotation.y +=
+        rotationSpeed *
+        delta;
+
+
+      renderFrame();
+    }
+
+
+    function startAnimation() {
+      if (
+        destroyed ||
+        animationFrame ||
+        !isVisible ||
+        document.hidden ||
+        reducedMotion
+      ) {
+        return;
+      }
+
+
+      clock.getDelta();
+
+      animate();
+    }
+
+
+    function stopAnimation() {
+      if (!animationFrame) {
+        return;
+      }
+
+
+      cancelAnimationFrame(
+        animationFrame
+      );
+
+
+      animationFrame = null;
+    }
+
+
+    /*
+     * Reduced Motion masih menampilkan 3D,
+     * hanya tidak diputar.
+     */
+    if (reducedMotion) {
+      logoGroup.rotation.y =
+        THREE.MathUtils.degToRad(
+          30
+        );
+
+      renderFrame();
+    } else {
+      startAnimation();
+    }
+
+
+    /* =========================================================
+       INTERSECTION OBSERVER
+       ========================================================= */
+
+    let visibilityObserver = null;
+
+
+    if (
+      "IntersectionObserver" in
+      window
+    ) {
+      visibilityObserver =
+        new IntersectionObserver(
+          entries => {
+            const entry =
+              entries[0];
+
+
+            isVisible =
+              entry.isIntersecting;
+
+
+            if (isVisible) {
+              resizeRenderer(true);
+
+              renderFrame();
+
+              startAnimation();
+            } else {
+              stopAnimation();
+            }
+          },
+          {
+            threshold: 0.01,
+
+            rootMargin:
+              "150px"
+          }
+        );
+
+
+      visibilityObserver.observe(
+        container
+      );
+    }
+
+
+    /* =========================================================
+       RESIZE OBSERVER
+       ========================================================= */
+
+    let resizeObserver = null;
+
+
+    function handleResize() {
+      if (destroyed) return;
+
+
+      if (resizeFrame) {
+        cancelAnimationFrame(
+          resizeFrame
+        );
+      }
+
+
+      resizeFrame =
+        requestAnimationFrame(
+          () => {
+            resizeFrame = null;
+
+            const valid =
+              resizeRenderer(true);
+
+
+            if (!valid) return;
+
+
+            renderFrame();
+          }
+        );
+    }
+
+
+    if (
+      "ResizeObserver" in
+      window
+    ) {
+      resizeObserver =
+        new ResizeObserver(
+          handleResize
+        );
+
+
+      resizeObserver.observe(
+        container
+      );
+    }
+
+
+    window.addEventListener(
+      "resize",
+      handleResize,
+      {
+        passive: true
+      }
+    );
+
+
+    window.addEventListener(
+      "orientationchange",
+      handleResize,
+      {
+        passive: true
+      }
+    );
+
+
+    /* =========================================================
+       VISIBILITY
+       ========================================================= */
+
+    function handleVisibility() {
+      if (destroyed) return;
+
+
+      if (document.hidden) {
+        stopAnimation();
+
+        return;
+      }
+
+
+      requestAnimationFrame(
+        () => {
+          resizeRenderer(true);
+
+          renderFrame();
+
+          startAnimation();
+        }
+      );
+    }
+
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibility
+    );
+
+
+    /* =========================================================
+       PAGE SHOW / BACK-FORWARD CACHE
+       ========================================================= */
+
+    function handlePageShow() {
+      if (destroyed) return;
+
+
+      requestAnimationFrame(
+        () => {
+          resizeRenderer(true);
+
+          renderFrame();
+
+          startAnimation();
+        }
+      );
+    }
+
+
+    window.addEventListener(
+      "pageshow",
+      handlePageShow
+    );
+
+
+    /* =========================================================
+       WEBGL CONTEXT LOST
+       ========================================================= */
+
+    function handleContextLost(
+      event
+    ) {
+      event.preventDefault();
+
+
+      console.warn(
+        "Boss Logo: WebGL context lost."
+      );
+
+
+      stopAnimation();
+
+
+      /*
+       * Langsung munculkan fallback.
+       */
+      container.classList.remove(
+        "is-three-ready"
+      );
+    }
+
+
+    function handleContextRestored() {
+      if (destroyed) return;
+
+
+      console.info(
+        "Boss Logo: WebGL context restored."
+      );
+
+
+      requestAnimationFrame(
+        () => {
+          resizeRenderer(true);
+
+          renderFrame();
+
+
+          container.classList.add(
+            "is-three-ready"
+          );
+
+
+          startAnimation();
+        }
+      );
+    }
+
+
+    canvas.addEventListener(
+      "webglcontextlost",
+      handleContextLost,
+      false
+    );
+
+
+    canvas.addEventListener(
+      "webglcontextrestored",
+      handleContextRestored,
+      false
+    );
+
+
+    /* =========================================================
+       FONT READY
+       ========================================================= */
+
+    if (
+      document.fonts?.ready
+    ) {
+      document.fonts.ready.then(
+        () => {
+          if (destroyed) {
+            return;
+          }
+
+
+          requestAnimationFrame(
+            () => {
+              resizeRenderer(true);
+
+              renderFrame();
+            }
+          );
+        }
+      );
+    }
+
+
+    /* =========================================================
+       DESTROY
+       ========================================================= */
+
+    function destroy() {
+      if (destroyed) return;
+
+
+      destroyed = true;
+
+
+      stopAnimation();
+
+
+      if (resizeFrame) {
+        cancelAnimationFrame(
+          resizeFrame
+        );
+      }
+
+
+      visibilityObserver?.disconnect();
+
+      resizeObserver?.disconnect();
+
+
+      window.removeEventListener(
+        "resize",
+        handleResize
+      );
+
+
+      window.removeEventListener(
+        "orientationchange",
+        handleResize
+      );
+
+
+      window.removeEventListener(
+        "pageshow",
+        handlePageShow
+      );
+
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibility
+      );
+
+
+      canvas.removeEventListener(
+        "webglcontextlost",
+        handleContextLost
+      );
+
+
+      canvas.removeEventListener(
+        "webglcontextrestored",
+        handleContextRestored
+      );
+
+
+      if (logoMesh) {
+        logoGroup.remove(
+          logoMesh
+        );
+      }
+
+
+      geometry.dispose();
+
+      faceMaterial.dispose();
+
+      sideMaterial.dispose();
+
+      renderer.dispose();
+
+
+      canvas.remove();
+
+
+      container.classList.remove(
+        "is-three-ready"
+      );
+    }
+
+
+    return {
+      destroy,
+      renderer,
+      scene,
+      camera,
+      logoGroup
+    };
+  }
+
+
+  /* =========================================================
+     WEBFLOW INIT
+     ========================================================= */
+
+  function bootBossLogo() {
+    requestAnimationFrame(
+      () => {
+        initBossLogo();
+      }
+    );
+  }
+
+
+  window.Webflow =
+    window.Webflow || [];
+
+
+  window.Webflow.push(
+    bootBossLogo
+  );
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      bootBossLogo,
+      {
+        once: true
+      }
+    );
+  } else {
+    bootBossLogo();
+  }
+
+
+  /*
+   * Bisa dipanggil manual jika suatu saat ada dynamic
+   * page transition / re-render.
+   */
+  window.initBossLogo3D =
+    function () {
+      const container =
+        document.getElementById(
+          "boss-logo"
+        );
+
+
+      if (!container) return;
+
+
+      container.dataset
+        .bossThreeState = "";
+
+
+      initBossLogo();
+    };
+</script>

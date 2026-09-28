@@ -1,0 +1,17 @@
+# BOSS | Media — `.section-cta` 3D logo (Code Embed 9)
+
+Embed element `f13cec74-4711-20d9-b2e1-6584afb7ad2f`, renders into `#boss-logo`.
+
+- `code-embed-9.original.html` — before the fix (rollback copy).
+- `code-embed-9.html` — live in the Designer.
+
+## Why the logo never showed on publish
+1. The embed was set to hidden (`visibility: false`), so Webflow left it out of the
+   published HTML. Now visible.
+2. It shipped its own `<script type="importmap">` ("three" -> jsdelivr three@0.185.0,
+   "three/addons/"). Code Embed 11 in `.section-fiiler` is earlier in the page and has
+   its own import map ("three" -> esm.sh three@0.174.0). A page only honours the first
+   map (newer Chrome merges, first entry wins), so `three/addons/...` never resolved or
+   "three" pointed at the wrong build. The import map is removed and the module imports
+   full URLs: `https://esm.sh/three@0.185.0` and
+   `https://esm.sh/three@0.185.0/examples/jsm/loaders/SVGLoader.js`.
