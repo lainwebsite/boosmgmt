@@ -73,3 +73,8 @@ v1.1.0: on iPhone, the tap on an item never reached the link, because Webflow ha
 - keeps `click` only as a fallback for mouse and keyboard.
 
 The test reproduces that iPhone case: v1.0.0 fails it and v1.1.0 passes (`node test/form-dropdown.test.mjs [min-file]`).
+
+## Form values in white
+
+- Designer: class `Text Field` now has `color: White` (`--white`, #fbfbf7). Typed text used the Webflow default dark gray, which was hard to see on the black form.
+- Page head: `head-form-colors.html` was appended to the page's head code. It turns a picked dropdown value (`.dropdown.is-selected`) white, and keeps iPhone/Chrome autofilled fields white too.
