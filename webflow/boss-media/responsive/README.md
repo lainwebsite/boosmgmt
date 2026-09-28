@@ -49,3 +49,15 @@ Styles added (medium, cascades to small/tiny): `www-bottom-content-track-scroll`
 
 `horizontal-scroll-positions.test.mjs` replays start/end transforms in Chromium at 390/700/900px:
 who-we-work last card ends inside the viewport, card-section last card ends 2em from the right.
+
+## Who We Work cards: full text on mobile portrait (tiny)
+
+The card text was cut off, and on most cards it never showed at all.
+
+- `www-card-item-content` had a fixed tiny `height: 26em`. The text ran past the bottom of the black card, and white text on the cream page could not be seen.
+- The card was also taller than the screen, so its text row sat below the fold. The terminal typing script (Code Embed 10) only starts once 20% of the text is visible, so on those cards it never ran.
+
+Changes, all on tiny only:
+- `www-card-item-content`: removed `height`, so the card now grows with its text.
+- `www-card-image-wrapp`: `aspect-ratio: 4/3` (was 2/2.2), so the heading and the whole card fit in the sticky 100vh.
+- `www-card-item`: `height: auto` and `gap: 1em`.
