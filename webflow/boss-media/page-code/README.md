@@ -53,11 +53,11 @@ without the guard 5982 -> 3186px, with it the document and form position stay pu
 Confirmed fixed on iPhone. `bosskbdebug` removed from the page (still registered on the
 site, unused); page header now carries only `bosskeyboardguard` 1.2.1.
 
-## Form dropdowns (`bossformdropdown` 1.0.0, page footer)
+## Form dropdowns (`bossformdropdown` 1.1.0, page footer)
 
 The "What are you looking to achieve?" and "Budget range" fields are Webflow Dropdown components. Their items are plain `#` links, so clicking one did not pick anything and nothing was submitted.
 
-`form-dropdown-select.js` is the readable source; `bossformdropdown-1.0.0.min.js` is the exact registered code. On an item click it:
+`form-dropdown-select.js` is the readable source; `bossformdropdown-1.1.0.min.js` is the exact registered code. On an item tap it:
 
 - shows the chosen text in the toggle;
 - stores the value in a hidden input, `Goal` or `Budget Range`, which is sent with the form;
@@ -65,3 +65,11 @@ The "What are you looking to achieve?" and "Budget range" fields are Webflow Dro
 - closes the list.
 
 Test: `node test/form-dropdown.test.mjs`.
+
+v1.1.0: on iPhone, the tap on an item never reached the link, because Webflow had already closed the list (setting it to `pointer-events: none`) before the click event arrived. The tap then went through to the field underneath. The script now does three things:
+
+- takes the pick on `pointerup`, from the tap position;
+- blocks the leftover touch/click events so they don't reach the field underneath;
+- keeps `click` only as a fallback for mouse and keyboard.
+
+The test reproduces that iPhone case: v1.0.0 fails it and v1.1.0 passes (`node test/form-dropdown.test.mjs [min-file]`).
