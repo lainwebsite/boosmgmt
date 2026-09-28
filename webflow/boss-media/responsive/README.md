@@ -84,3 +84,17 @@ Other changes in both interactions:
 - **"Horizontal first, then scroll down":** the slide actions now run over 0 to 0.8 of the timeline. A hold action (`cards-hold`, card row xPercent 100 to 100, 0.8 to 1.0) keeps the timeline length at 1. The last 20% of the sticky range therefore shows the finished row, covering the 0.6s scrub lag before the section scrolls away.
 
 `horizontal-scroll-positions.test.mjs` was updated for 4 cards: the last card ends 2em (32px) from the right at 390, 700 and 900px.
+
+## Card-section: wrapper-based shift (replaces the per-card percentages)
+The owner's recording showed the row going one card too far, leaving the right side empty. The per-card xPercent values depended on card size and count, so the approach was replaced with the one who-we-work uses, which needs no numbers:
+
+- **New wrapper:** a div with class `card-track` inside `card-content`, holding `null-card-1..5` (id `d3514c6e-9abc-8323-fad2-a78f82e434e7`).
+  - base: `display: contents`, so the desktop layout and IX2 see the cards exactly as before.
+  - medium (cascades down): `display: flex; width: max-content; flex-shrink: 0; gap: 2em; padding-right: 4em`.
+- **`i-43aa27d7` "Card Section — tablet & mobile horizontal scroll":** off on `main` only.
+  - 0 to 0.8: `card-content` xPercent 0 to 100 and `card-track` xPercent 0 to -100.
+  - 0.8 to 1: hold.
+  - The row ends with the last card 2em from the right, for any number or size of cards.
+- **`i-e1161f7a`** (mobile-portrait per-card version): deleted, no longer needed.
+
+`card-track-positions.test.mjs` checks 3, 4 and 5 cards at 390, 700 and 900px with several em sizes: all end exactly 2em from the right.
