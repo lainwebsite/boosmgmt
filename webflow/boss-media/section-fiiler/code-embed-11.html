@@ -9,8 +9,8 @@
      - hard poster fallback
 
      FIX:
-     - reveal starts the moment the last .www-card-item leaves
-       the viewport (no blank white gap)
+     - reveal starts while the last .www-card-item is still
+       leaving (START_OFFSET), so there is no blank white gap
      - .filler-media is held at top:0 from that moment until
        CSS sticky takes over, so the reveal never runs while
        the media is still scrolling in
@@ -442,6 +442,19 @@
   const ENTRY_PROGRESS_TABLET = 0.04;
 
   const ENTRY_PROGRESS_MOBILE = 0.04;
+
+  /* =========================================================
+   START OFFSET
+
+   Reveal starts while the last cards are still leaving:
+   once every card is past this fraction of the viewport
+   (width on desktop / tablet slide, height on mobile stack).
+   0 = wait until the cards are fully gone, 0.5 = half way.
+========================================================= */
+
+  const START_OFFSET_X = 0.5;
+
+  const START_OFFSET_Y = 0.35;
 
   const READY_FRAME_COUNT = 8;
 
@@ -965,8 +978,8 @@
     /* =======================================================
      SCROLL
 
-     Reveal starts the moment the last .www-card-item leaves
-     the viewport. If .track-filler has not reached the top
+     Reveal starts once every .www-card-item is past the
+     START_OFFSET line. If .track-filler has not reached the top
      yet, .filler-media is held at top:0 with a transform
      (visual sticky) until real CSS sticky takes over, so the
      reveal always runs on a stuck frame and never on a
@@ -1015,16 +1028,22 @@
             /* Scroll range while .filler-media stays stuck */
             const stickyDistance = Math.max(0, track.offsetHeight - (media.offsetHeight || viewport));
 
+            const span = Math.max(viewport * 0.5, stickyDistance * 0.88);
+
             return {
               top,
 
-              end: top + Math.max(viewport * 0.5, stickyDistance * 0.88),
+              /* Designed reveal -> hide length */
+              span,
+
+              /* Hide must still finish here (original end) */
+              end: top + span,
             };
           };
 
-          /* Cards are done only once they have left PAST the
-             viewport: off to the right (desktop horizontal
-             slide) or above the top (tablet / mobile stack).
+          /* Cards count as leaving once all of them are past the
+             START_OFFSET line: towards the right edge (desktop
+             horizontal slide) or the top (tablet / mobile stack).
              Cards still below or left have not played yet. */
           const cardsGone = () => {
             if (!cards.length || !cardsSection) {
@@ -1036,12 +1055,14 @@
               return false;
             }
 
-            const vw = window.innerWidth;
+            const lineX = window.innerWidth * START_OFFSET_X;
+
+            const lineY = window.innerHeight * START_OFFSET_Y;
 
             return cards.every((card) => {
               const r = card.getBoundingClientRect();
 
-              return r.left >= vw || r.bottom <= 0;
+              return r.left >= lineX || r.bottom <= lineY;
             });
           };
 
@@ -1064,6 +1085,33 @@
             uniforms.uStarted.value = 1;
 
             uniforms.uReveal.value = Math.min(1, entryProgress + realProgress * (1 - entryProgress));
+          };
+
+          /* Reveal and hide keep the designed pace (span). When
+             the run from the start point to the original end is
+             longer than span, the extra distance holds the clean
+             video between REVEAL_PORTION and HIDE_START, so the
+             hide still lands at the original end. */
+          const mapProgress = (distance, span, total) => {
+            span = Math.max(1, span);
+
+            if (total <= span) {
+              return distance / Math.max(1, total);
+            }
+
+            const revealEnd = span * REVEAL_PORTION;
+
+            const holdEnd = revealEnd + span * (HIDE_START - REVEAL_PORTION) + (total - span);
+
+            if (distance <= revealEnd) {
+              return distance / span;
+            }
+
+            if (distance <= holdEnd) {
+              return REVEAL_PORTION + ((distance - revealEnd) / (holdEnd - revealEnd)) * (HIDE_START - REVEAL_PORTION);
+            }
+
+            return HIDE_START + (distance - holdEnd) / span;
           };
 
           const resetReveal = () => {
@@ -1140,9 +1188,7 @@
 
             setHold(Math.min(0, scrollY - geo.top));
 
-            const span = Math.max(1, geo.end - startY);
-
-            setReveal((scrollY - startY) / span);
+            setReveal(mapProgress(scrollY - startY, geo.span, geo.end - startY));
           };
 
           /* =================================================

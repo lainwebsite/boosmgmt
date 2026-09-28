@@ -24,3 +24,11 @@ Now the scroll controller runs every frame and:
 - from that scroll position holds `.filler-media` at `top: 0` with a
   `translate3d` until CSS sticky takes over (visual sticky, no layout change);
 - maps reveal progress from that exit point to the sticky end x 0.88.
+
+### 3. Reveal started too late and too slow
+- `START_OFFSET_X = 0.5` / `START_OFFSET_Y = 0.35`: reveal starts once every
+  card is past the middle of the viewport (right half on desktop, top 35% on
+  mobile), overlapping the exit instead of waiting for an empty screen.
+- Reveal and hide keep the designed pace (`sticky distance x 0.88`); extra
+  scroll between the start and the original end holds the clean video, so the
+  hide still lands where it did before.
