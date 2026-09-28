@@ -1,3 +1,4 @@
+// card-section: 4 visible cards (null-card-1 hidden). End shift per card = -(2 + 4*w + 3*2 + 2)/w * 100%
 import { createRequire } from 'module';
 const require = createRequire('/opt/node22/lib/node_modules/');
 const { chromium } = require('playwright');
@@ -13,9 +14,9 @@ body{margin:0;overflow-x:hidden}
 .nc{transform:translateX(${cardX}%)} .cm{width:${w}em;height:40px;background:#333}
 </style></head><body>
 <div class="pad"><div class="S"><div class="N"><div class="T">${'<div class="card"></div>'.repeat(4)}</div></div></div></div>
-<div class="CW"><div class="CC">${'<div class="nc"><div class="cm"></div></div>'.repeat(5)}</div></div></body></html>`;
+<div class="CW"><div class="CC">${'<div class="nc"><div class="cm"></div></div>'.repeat(4)}</div></div></body></html>`;
 const b = await chromium.launch();
-for (const [vw, w, pct] of [[390, 50, -524], [700, 35, -534.29], [900, 35, -534.29]]) {
+for (const [vw, w, pct] of [[390, 50, -420], [700, 35, -428.57], [900, 35, -428.57]]) {
   const p = await b.newPage({ viewport: { width: vw, height: 800 } });
   for (const t of [0, 1]) {
     await p.setContent(html(t*100, t*-100, t*pct, w));

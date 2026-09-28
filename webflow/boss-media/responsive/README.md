@@ -70,3 +70,17 @@ Cards had different heights because text length differs and the row centered the
 - `www-bottom-content`: `align-items: stretch`.
 
 All four cards now take the height of the tallest one (checked in a Chromium replica at 390px: 342/342/342).
+
+## Card-section after removing a card (4 visible cards)
+The owner hid `null-card-1` (visibility off), so 4 cards remain (`null-card-2..5`). The IX3 timelines were changed to match:
+
+| Interaction | Per-card shift (was) | Per-card shift (now) |
+|---|---|---|
+| `i-43aa27d7` tablet & mobile landscape | -534.29% (5 cards) | -428.57% = -(2 + 4x35 + 3x2 + 2)/35 |
+| `i-e1161f7a` mobile portrait | -524% (5 cards) | -420% = -(2 + 4x50 + 3x2 + 2)/50 |
+
+Other changes in both interactions:
+- `null-card-1` was removed from the targets.
+- **"Horizontal first, then scroll down":** the slide actions now run over 0 to 0.8 of the timeline. A hold action (`cards-hold`, card row xPercent 100 to 100, 0.8 to 1.0) keeps the timeline length at 1. The last 20% of the sticky range therefore shows the finished row, covering the 0.6s scrub lag before the section scrolls away.
+
+`horizontal-scroll-positions.test.mjs` was updated for 4 cards: the last card ends 2em (32px) from the right at 390, 700 and 900px.
