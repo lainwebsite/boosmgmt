@@ -1,11 +1,11 @@
 <script>
   /* =========================================================
-     MOBILE KEYBOARD GUARD
+     MOBILE KEYBOARD GUARD  (registered script bosskeyboardguard)
 
-     Most sections here are sized in vh (500vh, 350vh, 1050vh...).
-     Browsers that shrink the layout viewport for the on-screen
-     keyboard shrink every one of them, so the page jumps down
-     when the keyboard opens and back up when it closes.
+     Most sections here are sized in vh (500vh, 350vh, 1050vh...)
+     and wrapped in sticky / transformed layers. The browser's own
+     "scroll the focused field into view" miscalculates on this
+     layout and throws the page far down (iPhone: to the footer).
   ========================================================= */
 
   (() => {
@@ -17,23 +17,67 @@
       meta.setAttribute('content', `${meta.content}, interactive-widget=resizes-visual`);
     }
 
-    /* 2. Browsers that still resize the layout (in-app webviews...):
-          when the keyboard closes, put the form back where it was.
-          Skipped when the layout never resized (iOS): the browser
-          restores the scroll itself and a second fix overshoots. */
     if (!matchMedia('(pointer: coarse)').matches) {
       return;
     }
 
-    const isField = (el) =>
-      !!el &&
-      !!el.matches &&
-      el.matches(
-        'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea, select, [contenteditable="true"]',
-      );
+    const FIELDS =
+      'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea, select, [contenteditable="true"]';
 
-    const viewportKey = () => `${window.innerHeight}|${window.visualViewport ? Math.round(window.visualViewport.height) : 0}`;
+    const TYPING = 'input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]), textarea';
 
+    const isField = (el) => !!el && !!el.matches && el.matches(FIELDS);
+
+    /* 2. Tap on a text field: focus it ourselves with preventScroll,
+          so the browser does not jump the page. The keyboard still
+          opens (focus runs inside the tap) and the browser only pans
+          the visual viewport to show the caret. */
+    let tap = null;
+
+    document.addEventListener(
+      'touchstart',
+      (event) => {
+        const field = event.target.closest?.(TYPING);
+
+        tap = field && field !== document.activeElement ? { field, x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+      },
+      {
+        passive: true,
+      },
+    );
+
+    document.addEventListener(
+      'touchend',
+      (event) => {
+        if (!tap) {
+          return;
+        }
+
+        const { field, x, y } = tap;
+
+        tap = null;
+
+        const touch = event.changedTouches[0];
+
+        /* A swipe that started on a field is a scroll, not a tap */
+        if (!touch || Math.abs(touch.clientX - x) > 10 || Math.abs(touch.clientY - y) > 10) {
+          return;
+        }
+
+        event.preventDefault();
+
+        field.focus({
+          preventScroll: true,
+        });
+      },
+      {
+        passive: false,
+      },
+    );
+
+    /* 3. Browsers that still resize the layout (in-app webviews...):
+          when the keyboard closes, put the form back where it was.
+          Skipped when the layout never resized (iOS). */
     let session = null;
 
     document.addEventListener('focusin', (event) => {
@@ -85,7 +129,7 @@
         let stableSince = started;
 
         const settle = (now) => {
-          const key = viewportKey();
+          const key = `${window.innerHeight}|${window.visualViewport ? Math.round(window.visualViewport.height) : 0}`;
 
           if (key !== lastKey) {
             lastKey = key;
@@ -115,7 +159,7 @@
       }, 120);
     });
 
-    /* 3. ScrollTrigger must not re-measure on keyboard resize */
+    /* 4. ScrollTrigger must not re-measure on keyboard resize */
     window.addEventListener(
       'load',
       () => {

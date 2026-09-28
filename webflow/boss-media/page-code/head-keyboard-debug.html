@@ -1,0 +1,108 @@
+<script>
+  /* =========================================================
+     KEYBOARD DEBUG  (registered script bosskbdebug)
+     Only active with ?kbdebug in the URL. Shows an on-screen log
+     of every big scroll jump and which code caused it.
+  ========================================================= */
+
+  (() => {
+    if (!/[?&]kbdebug/.test(location.search)) {
+      return;
+    }
+
+    const lines = [];
+
+    let box = null;
+
+    const log = (text) => {
+      lines.push(`${Math.round(performance.now())} ${text}`);
+
+      if (lines.length > 16) {
+        lines.shift();
+      }
+
+      if (!box && document.body) {
+        box = document.createElement('pre');
+
+        box.style.cssText =
+          'position:fixed;left:0;right:0;top:0;z-index:2147483647;margin:0;padding:6px;font:10px/1.3 monospace;color:#0f0;background:rgba(0,0,0,.85);white-space:pre-wrap;pointer-events:none;max-height:45vh;overflow:hidden';
+
+        document.body.appendChild(box);
+      }
+
+      if (box) {
+        box.textContent = lines.join('\n');
+      }
+    };
+
+    const state = () => {
+      const vv = window.visualViewport;
+
+      return `y=${Math.round(scrollY)} doc=${document.documentElement.scrollHeight} ih=${innerHeight} vv=${vv ? Math.round(vv.height) : '-'}/${vv ? Math.round(vv.offsetTop) : '-'}`;
+    };
+
+    const caller = () => {
+      const stack = (new Error().stack || '').split('\n').slice(3, 5).join(' < ');
+
+      return stack.replace(/https?:\/\/[^\s)]*\//g, '').slice(0, 140);
+    };
+
+    const wrap = (obj, name) => {
+      const original = obj[name];
+
+      if (typeof original !== 'function') {
+        return;
+      }
+
+      obj[name] = function (...args) {
+        log(`CALL ${name}(${JSON.stringify(args).slice(0, 60)}) ${caller()}`);
+
+        return original.apply(this, args);
+      };
+    };
+
+    wrap(window, 'scrollTo');
+
+    wrap(window, 'scrollBy');
+
+    wrap(window, 'scroll');
+
+    wrap(Element.prototype, 'scrollIntoView');
+
+    wrap(Element.prototype, 'scrollTo');
+
+    wrap(HTMLElement.prototype, 'focus');
+
+    let lastY = scrollY;
+
+    let lastDoc = 0;
+
+    addEventListener(
+      'scroll',
+      () => {
+        const doc = document.documentElement.scrollHeight;
+
+        if (Math.abs(scrollY - lastY) > 150 || doc !== lastDoc) {
+          log(`SCROLL ${Math.round(lastY)}->${state()}`);
+        }
+
+        lastY = scrollY;
+
+        lastDoc = doc;
+      },
+      {
+        passive: true,
+      },
+    );
+
+    addEventListener('resize', () => log(`RESIZE ${state()}`));
+
+    window.visualViewport?.addEventListener('resize', () => log(`VV ${state()}`));
+
+    document.addEventListener('focusin', (event) => log(`FOCUS ${event.target.name || event.target.tagName} ${state()}`));
+
+    document.addEventListener('focusout', () => log(`BLUR ${state()}`));
+
+    addEventListener('load', () => log(`LOAD ${state()}`));
+  })();
+</script>

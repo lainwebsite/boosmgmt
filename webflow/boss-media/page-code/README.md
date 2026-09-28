@@ -23,3 +23,14 @@ jumped far above the form.
 - Cause 2: iOS never resizes the layout for the keyboard and restores the scroll itself;
   the 1.0.0 restore added a second correction and overshot. 1.0.1 only restores when
   `window.innerHeight` actually changed by > 80px while the keyboard was open.
+
+### 1.1.0 — take over focus scrolling
+Still jumped on iPhone after 1.0.1. On a tap on a text field the guard now calls
+`field.focus({ preventScroll: true })` itself (touchend, tap only, not swipes), so WebKit
+does not run its own scroll-into-view, which miscalculates on this layout.
+
+## `head-keyboard-debug.html` (registered script `bosskbdebug` 1.0.0)
+Opt-in diagnostics: open the page with `?kbdebug`. Green overlay logs focus/blur,
+resize, visualViewport, every scroll jump > 150px or document height change, and every
+`scrollTo` / `scrollBy` / `scrollIntoView` / `focus` call with its caller. Remove before
+going live on the custom domain.
