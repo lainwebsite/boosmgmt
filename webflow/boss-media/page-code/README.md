@@ -78,3 +78,9 @@ The test reproduces that iPhone case: v1.0.0 fails it and v1.1.0 passes (`node t
 
 - Designer: class `Text Field` now has `color: White` (`--white`, #fbfbf7). Typed text used the Webflow default dark gray, which was hard to see on the black form.
 - Page head: `head-form-colors.html` was appended to the page's head code. It turns a picked dropdown value (`.dropdown.is-selected`) white, and keeps iPhone/Chrome autofilled fields white too.
+
+Follow-up: on iPhone the typed text still showed Webflow's default dark gray (`#333`). The Designer color alone did not win there, so `head-form-colors.html` now does:
+
+- sets `color` and `-webkit-text-fill-color` to #fbfbf7 with `!important` on `#email-form .text-field`, including `:focus`;
+- keeps the placeholder #999;
+- turns picked dropdown values and autofilled fields white.

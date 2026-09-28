@@ -1,14 +1,26 @@
-
 <style>
   /* Form: filled-in values in white (bossformdropdown marks a picked dropdown .is-selected) */
+  #email-form .text-field,
+  #email-form .text-field:focus {
+    color: #fbfbf7 !important;
+    -webkit-text-fill-color: #fbfbf7 !important;
+    caret-color: #fbfbf7;
+  }
+
+  /* text-fill-color reaches the placeholder in WebKit; keep it gray */
+  #email-form .text-field::placeholder {
+    color: #999 !important;
+    -webkit-text-fill-color: #999 !important;
+    opacity: 1;
+  }
+
   #email-form .dropdown.is-selected .dropdown-toggle {
-    color: var(--white);
+    color: #fbfbf7 !important;
   }
 
   #email-form .text-field:-webkit-autofill,
   #email-form .text-field:-webkit-autofill:focus {
-    -webkit-text-fill-color: var(--white);
-    caret-color: var(--white);
+    -webkit-text-fill-color: #fbfbf7 !important;
     transition: background-color 9999s ease 0s;
   }
 </style>
