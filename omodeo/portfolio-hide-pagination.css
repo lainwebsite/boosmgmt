@@ -1,0 +1,6 @@
+/* Omodeo — Portfolio page only (Roundable RB-02, thread 594)
+   Added to the Portfolio page head custom code (inside a <style> block).
+   Hides the "Our Work" reveal pagination without removing it from the DOM. */
+.ow-stage .hp-ow-bottom-pagination {
+  display: none !important;
+}
