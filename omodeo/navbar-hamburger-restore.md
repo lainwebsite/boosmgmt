@@ -1,13 +1,10 @@
-# Omodeo — Navbar hamburger restore
+# Omodeo — Navbar menu button (reverted to original)
 
-Navbar component > Menu Button had 4 hidden children and 1 visible one.
+Navbar component > Menu Button, visibility only (Designer element settings):
+- SHOWN (original): HTML Embed with `<button class="nav-toggle">` (2 lines `line-top` / `line-bottom`).
+  The site head CSS (`.menu-button.w--open .line-top / .line-bottom`) animates it into an X.
+- HIDDEN: HTML Embed with the 3-line SVG (`menu-icon-open`) and the X SVG (`menu-icon-close`).
+  This one was shown by the earlier "hamburger restore" and has now been reverted.
 
-Restored (visibility only, Designer element settings):
-- SHOWN: HTML Embed with the 3-line SVG (`menu-icon-open`) and the X SVG (`menu-icon-close`)
-- HIDDEN: HTML Embed with `<button class="nav-toggle">` (2 lines `line-top` / `line-bottom`)
-
-Still hidden, untouched: default Icon, Image `hamburger-menu` (hamburger-white-menu.svg).
-
-Note: no site/page CSS or IX3 interaction toggles `menu-icon-open` vs `menu-icon-close`.
-If both icons show at once, the open/close toggle (legacy IX2 or CSS) needs to be re-added.
+Still hidden, untouched: default Icon, Image `hamburger-menu`.
 Published to the staging subdomain only.
