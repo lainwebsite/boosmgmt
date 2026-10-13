@@ -18,3 +18,7 @@ Embed element `f13cec74-4711-20d9-b2e1-6584afb7ad2f`, renders into `#boss-logo`.
 
 ## Logo size +15% (2026-10-13)
 The page head CSS sizes the logo with `#boss-logo.canvas.media`: it was `width: 100%` and `max-width: 45em`, and is now `width: 115%` and `max-width: 52em`. The camera fit in Code Embed 9 follows the container size, so the logo scales with it. The box stays centered because it is absolutely positioned inside the flex `cta-content-media-in-wrapp`.
+
+Correction (same day): widening the box alone did nothing. The Designer class also sets `height` (35em base, 45em tiny), and the camera fits the smaller side. On mobile, em is only a few px, so the 52em cap was about 150 to 200px. The box is now a square forced in the page head:
+- desktop and tablet: 40em x 40em (about +15% over the effective 35em);
+- 767px and below: 80vw x 80vw.
