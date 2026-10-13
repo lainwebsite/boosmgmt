@@ -106,3 +106,25 @@ Script tags went from 15 to 8, with roughly 400 KB less JS to download and parse
 - that there are no new errors.
 
 Result: no differences.
+
+## Performance pass 2026-10-13 (Safari / Firefox / weaker devices janky)
+Same visuals, less work per frame. Tests: `test/collage-idle-equivalence.test.mjs`,
+`test/terminal-text.test.mjs` (run with `LIBS=<npm-packed libs>`; see test headers).
+
+- **Collage (page footer, CSS3D 150 cards)**: the rAF loop recomputed all 150 cards every
+  frame forever, even with nothing moving or the section far away. Now it skips the frame
+  when hero + collage are > 200px off screen (IntersectionObserver), and when scroll
+  progress and mouse parallax have not moved since the last draw. `boxShadow` / `filter`
+  are only written when the value changes. Old vs new: identical card transforms /
+  opacity / visibility at every tested scroll position (< 0.01px). Chromium, 3s idle:
+  ~150ms JS -> ~20ms.
+- **Footer size**: Webflow caps page custom code at 50 000 chars. To make room, the form
+  submit script and the desktop float-cards script moved to the page head
+  (`page-head.html`). Both are `Webflow.push` callbacks, so they still run on DOM ready
+  after the footer libraries. Rollback: `page-footer.before-perf-2026-10-13.html`
+  (and remove the last two scripts from the head).
+- **Terminal text (Code Embed 10, `../section-terminal/`)**: every 50ms it walked all
+  ancestors of every `.terminal-text` with `getComputedStyle` + `getBoundingClientRect`,
+  forever. Now elements an IntersectionObserver reports as off screen count as 0% visible
+  without the walk (same result), finished one-shot items leave the list, and the ticker
+  stops once nothing is left to watch.

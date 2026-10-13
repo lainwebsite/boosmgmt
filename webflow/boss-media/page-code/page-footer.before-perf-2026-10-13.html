@@ -1,0 +1,1910 @@
+<!-- =========================================
+     LIBRARIES (one copy each)
+     Previously GSAP core was loaded 4x (3.13, 3.x, 3.15, 3.12.2),
+     ScrollTrigger 2x, Lenis 2x and React 18 UMD (unused). Each
+     later copy replaced the earlier one, so the page always ran
+     on GSAP 3.12.2 + ScrollTrigger 3.12.2 + Lenis 1.0.34. Only
+     those are kept, so behaviour stays identical.
+     SplitText / ScrambleText load before the core, as before they
+     ended up unregistered until registerPlugin() below.
+========================================= -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/ScrambleTextPlugin.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/SplitText.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
+
+<script>
+  window.Webflow = window.Webflow || [];
+
+  window.Webflow.push(function () {
+    const form = document.querySelector('#email-form');
+    const submitButton = document.querySelector('.link-text.media');
+
+    if (!form || !submitButton) return;
+
+    submitButton.addEventListener('click', function (event) {
+      event.preventDefault();
+
+      // Menjalankan validasi required bawaan browser,
+      // kemudian submit melalui sistem form Webflow.
+      form.requestSubmit();
+    });
+  });
+</script>
+
+<script>
+  /* =========================================
+     LENIS
+     Instance kedua DIHAPUS. Scroll sudah
+     di-handle lenis2 (script di bawah).
+     Dua Lenis = scroll saling tarik
+     -> sticky goyang / tabrakan.
+  ========================================= */
+
+  /* =========================================
+     CONFIG
+  ========================================= */
+
+  const Z_START_MULT = 1.5;
+  const Z_END_MULT = 2;
+
+  const SHADOW_STRENGTH = 0;
+  const SHADOW_DARKEN = 0;
+
+  const SCALE_START = 0.9;
+  const SCALE_END = 1.2;
+
+  let zStartMult = Z_START_MULT;
+  let zEndMult = Z_END_MULT;
+
+  let shadowStr = SHADOW_STRENGTH;
+  let shadowDarken = SHADOW_DARKEN;
+
+  let globalStartSc = SCALE_START;
+  let globalEndSc = SCALE_END;
+
+  /* =========================================
+     RESPONSIVE VALUES
+  ========================================= */
+
+  let sceneScale = 1;
+  let sceneParallax = 1;
+
+  let cameraStartZ = 4200;
+  let cameraEndZ = 260;
+
+  /* Desktop: 0,0 -> logo B langsung lurus
+     di tengah saat hero menghilang.
+     (sebelumnya -320, 220) */
+  let cameraStartX = 0;
+  let cameraStartY = 0;
+
+  function updateResponsiveConfig() {
+    const width = document.documentElement.clientWidth || window.innerWidth;
+
+    /* =====================================
+       DESKTOP
+       > 991px
+    ===================================== */
+
+    if (width > 991) {
+      globalStartSc = SCALE_START;
+      globalEndSc = SCALE_END;
+
+      sceneScale = 1;
+      sceneParallax = 1;
+
+      cameraStartZ = 4200;
+      cameraEndZ = 260;
+
+      cameraStartX = 0;
+      cameraStartY = 0;
+
+      return;
+    }
+
+    /* =====================================
+       TABLET
+       768px - 991px
+    ===================================== */
+
+    if (width > 767) {
+      globalStartSc = SCALE_START * 0.88;
+
+      globalEndSc = SCALE_END * 0.88;
+
+      /* uniform scaling */
+      sceneScale = 0.82;
+
+      sceneParallax = 0.55;
+
+      cameraStartZ = 4500;
+      cameraEndZ = 360;
+
+      cameraStartX = -220;
+      cameraStartY = 160;
+
+      return;
+    }
+
+    /* =====================================
+       LARGE MOBILE
+       480px - 767px
+    ===================================== */
+
+    if (width > 479) {
+      globalStartSc = SCALE_START * 0.82;
+
+      globalEndSc = SCALE_END * 0.82;
+
+      /* uniform scaling */
+      sceneScale = 0.7;
+
+      sceneParallax = 0.3;
+
+      cameraStartZ = 4850;
+      cameraEndZ = 470;
+
+      cameraStartX = -120;
+      cameraStartY = 100;
+
+      return;
+    }
+
+    /* =====================================
+       MOBILE PORTRAIT
+       <= 479px
+    ===================================== */
+
+    globalStartSc = SCALE_START * 1.17;
+
+    globalEndSc = SCALE_END * 1.17;
+
+    /*
+      X dan Y HARUS sama
+      agar formasi tidak gepeng.
+    */
+
+    sceneScale = 0.93;
+
+    sceneParallax = 0.1;
+
+    /*
+      Kamera dibuat lebih jauh
+      supaya scene masuk viewport.
+    */
+
+    cameraStartZ = 5200;
+    cameraEndZ = 560;
+
+    cameraStartX = 0;
+    cameraStartY = 60;
+  }
+
+  updateResponsiveConfig();
+
+  /* =========================================
+     IMAGE MAP
+  ========================================= */
+
+  const IMAGE_MAP = {
+    V: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6306e4a3a27fe558e_B.MEDIA.LOGO39%201.avif',
+    Y: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d685d49753839f6905_B.MEDIA.LOGO37%201.avif',
+
+    U: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d61096a97a3dd94bf4_B.MEDIA.LOGO38%201.avif',
+
+    Si: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d63041f2fb6e1d5e61_B.MEDIA.LOGO36%201.avif',
+
+    Sc: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6bd236ccc9b8a896b_B.MEDIA.LOGO43%201.avif',
+
+    Ti: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d61229fc3c43cc7954_B.MEDIA.LOGO46%201.avif',
+
+    S: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d68f58b10c1360bd75_B.MEDIA.LOGO40%201.avif',
+
+    Th: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6f9ff54805a02f7ae_B.MEDIA.LOGO41%201.avif',
+
+    Sm: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6a42931c9c6111efe_B.MEDIA.LOGO42%201.avif',
+
+    Ra: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d7205daf82c7afb61e_B.MEDIA.LOGO44%201.avif',
+
+    Pt: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d70217df72a308a9d1_B.MEDIA.LOGO45%201.avif',
+
+    Rg: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c2592b331c161435f81_UPDATES_15%201.avif',
+
+    Pu: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c25d5b03074ce70a533_UPDATES_14%201.avif',
+
+    Pr: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c2592b331c161435f5b_UPDATES_12%201.avif',
+
+    Pa: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c256e73b8e5db4e6309_UPDATES_13%201.avif',
+
+    Pm: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c2455386783b0c16323_UPDATES_1%206.avif',
+
+    Pd: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c242d19de5cbb01b931_UPDATES_11%201.avif',
+
+    P: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c2492b331c161435f2d_UPDATES_5%201.avif',
+
+    Ni: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24ec9c537c9827f257_UPDATES_4%201.avif',
+
+    Ne: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24e4e1f8425276ebc9_UPDATES_3%201.avif',
+
+    Np: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24255e8047116f574e_UPDATES_9%201.avif',
+
+    Nd: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24c2ff1bd08b105db8_UPDATES_10%201.avif',
+
+    O: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24b37e4be48b309f5a_UPDATES_8%201.avif',
+
+    Mn: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24e4e1f8425276eb67_UPDATES_2%201.avif',
+
+    Na: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c24b04115e0ebf39acd_UPDATES_7%201.avif',
+
+    N: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a8e8c2344ceed91476be08e_UPDATES_6%201.avif',
+
+    K: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c3ccadbc0ebbc78a3f_B.MEDIA.LOGO71%201.avif',
+
+    Mg: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c31c9785e471365726_BRANDS%20%20OPTION%202%20%20BOSS%20MEDIA%201.avif',
+
+    La: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c3b37d2e1fd766e96a_B.MEDIA.LOGO78%201.avif',
+
+    Gd: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c3b37d2e1fd766e96d_B.MEDIA.LOGO70%201.avif',
+
+    Ho: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c35532134a21666caa_B.MEDIA.LOGO80%201.avif',
+
+    Fm: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c3971d53e17c8d9da3_B.MEDIA.LOGO77%201.avif',
+
+    Fr: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c35532134a21666cad_B.MEDIA.LOGO82%201.avif',
+
+    F: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c39f3b563dfb4ce38b_B.MEDIA.LOGO60%201.avif',
+
+    Fe: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c41096a97a3dd99009_B.MEDIA.LOGO73%201.avif',
+
+    Cs: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c43f76bd3a350095e2_B.MEDIA.LOGO72%201.avif',
+
+    Cr: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c41c9785e471365781_B.MEDIA.LOGO68%201.avif',
+
+    Es: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c41c9785e471365784_B.MEDIA.LOGO66%201.avif',
+
+    Er: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c41c9785e471365796_B.MEDIA.LOGO74%201.avif',
+
+    Ds: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c42ffd85c1c2507b61_B.MEDIA.LOGO69%201.avif',
+
+    Eu: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c45043db41c39e1e6b_B.MEDIA.LOGO64%201.avif',
+
+    Cl: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c403dbceb1d682235c_B.MEDIA.LOGO61%201.avif',
+
+    Co: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c46fbb25af22d5496c_B.MEDIA.LOGO79%201.avif',
+
+    Ba: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c542829c057f261919_B.MEDIA.LOGO67%201.avif',
+
+    Cm: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c57a57ba235304e20a_B.MEDIA.LOGO65%201.avif',
+
+    C: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e77c57a57ba235304e20d_B.MEDIA.LOGO63%201.avif',
+
+    Al: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e7f3ffb3faba029485b5e_BRANDS%20%20OPTION%202%20%20BOSS%20MEDIA%20copy.avif',
+
+    B: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e7f3f80a7048a9d15b0e4_BRANDS%20%20OPTION%202%20%20BOSS%20MEDIA.avif',
+
+    Be: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e7f3f2b9481f5071849e0_BRANDS%20%20OPTION%202%20%20BOSS%20MEDIA%20copy%202.avif',
+
+    Ce: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6306e4a3a27fe558e_B.MEDIA.LOGO39%201.avif',
+
+    Ag: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d685d49753839f6905_B.MEDIA.LOGO37%201.avif',
+
+    Ca: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d61096a97a3dd94bf4_B.MEDIA.LOGO38%201.avif',
+
+    Au: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d63041f2fb6e1d5e61_B.MEDIA.LOGO36%201.avif',
+
+    Am: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6bd236ccc9b8a896b_B.MEDIA.LOGO43%201.avif',
+
+    Ac: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d61229fc3c43cc7954_B.MEDIA.LOGO46%201.avif',
+
+    Li: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d68f58b10c1360bd75_B.MEDIA.LOGO40%201.avif',
+
+    He: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6f9ff54805a02f7ae_B.MEDIA.LOGO41%201.avif',
+
+    H: 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a7e76d6a42931c9c6111efe_B.MEDIA.LOGO42%201.avif',
+  };
+
+  /* =========================================
+     TABLE
+  ========================================= */
+
+  const table = ['H', 'Hydrogen', '1.00794', 1, 1, 'He', 'Helium', '4.002602', 2, 1, 'Li', 'Lithium', '6.941', 1, 2, 'Be', 'Beryllium', '9.012182', 2, 2, 'B', 'Boron', '10.811', 3, 3, 'C', 'Carbon', '12.0107', 4, 3, 'N', 'Nitrogen', '14.0067', 5, 3, 'O', 'Oxygen', '15.9994', 10, 8, 'F', 'Fluorine', '18.9984032', 11, 8, 'Ne', 'Neon', '20.1797', 1, 9, 'Na', 'Sodium', '22.98976...', 1, 11, 'Mg', 'Magnesium', '24.305', 2, 11, 'Al', 'Aluminium', '26.9815386', 6, 3, 'Si', 'Silicon', '28.0855', 7, 3, 'P', 'Phosphorus', '30.973762', 8, 3, 'S', 'Sulfur', '32.065', 9, 3, 'Cl', 'Chlorine', '35.453', 2, 9, 'K', 'Potassium', '39.948', 1, 8, 'Ca', 'Calcium', '40.078', 2, 8, 'Sc', 'Scandium', '44.955912', 1, 6, 'Ti', 'Titanium', '47.867', 3, 4, 'V', 'Vanadium', '50.9415', 4, 4, 'Cr', 'Chromium', '51.9961', 5, 4, 'Mn', 'Manganese', '54.938045', 6, 4, 'Fe', 'Iron', '55.845', 7, 4, 'Co', 'Cobalt', '58.933195', 8, 4, 'Ni', 'Nickel', '58.6934', 9, 4, 'Y', 'Yttrium', '88.90585', 2, 6, 'Pd', 'Palladium', '106.42', 10, 5, 'Ag', 'Silver', '107.8682', 11, 5, 'Cs', 'Caesium', '132.9054', 1, 10, 'Ba', 'Barium', '132.9054', 2, 10, 'La', 'Lanthanum', '138.90547', 4, 10, 'Ce', 'Cerium', '140.116', 5, 10, 'Pr', 'Praseodymium', '140.90765', 6, 10, 'Nd', 'Neodymium', '144.242', 7, 10, 'Pm', 'Promethium', '(145)', 8, 10, 'Sm', 'Samarium', '150.36', 9, 10, 'Eu', 'Europium', '151.964', 10, 9, 'Gd', 'Gadolinium', '157.25', 11, 9, 'Ho', 'Holmium', '164.93032', 14, 10, 'Er', 'Erbium', '167.259', 15, 10, 'Pt', 'Platinum', '195.084', 10, 6, 'Au', 'Gold', '196.966569', 11, 6, 'Fr', 'Francium', '(223)', 1, 7, 'Ra', 'Radium', '(226)', 2, 7, 'Ac', 'Actinium', '(227)', 4, 11, 'Th', 'Thorium', '232.03806', 5, 11, 'Pa', 'Protactinium', '231.0588', 6, 11, 'U', 'Uranium', '238.02891', 7, 11, 'Np', 'Neptunium', '(237)', 8, 11, 'Pu', 'Plutonium', '(244)', 9, 11, 'Am', 'Americium', '(243)', 3, 11, 'Cm', 'Curium', '(247)', 3, 10, 'Es', 'Einstenium', '(252)', 14, 11, 'Fm', 'Fermium', '(257)', 15, 11, 'Ds', 'Darmstadium', '(281)', 10, 7, 'Rg', 'Roentgenium', '(280)', 11, 7];
+
+  /* =========================================
+     THREE VARIABLES
+  ========================================= */
+
+  let camera;
+  let scene;
+  let renderer;
+
+  const objects = [];
+
+  const startKF = [];
+  const endKF = [];
+
+  const delays = [];
+
+  const zStartSpreads = [];
+  const zEndSpreads = [];
+
+  const perCardScales = [];
+  const cardEls = [];
+  const cardFades = [];
+
+  let scrollP = 0;
+  let scrollPSmooth = 0;
+
+  const TARGET_COUNT = 150;
+
+  const CARD_W = 88;
+  const CARD_H = 112;
+
+  const GRID_X = 115;
+  const GRID_Y = 135;
+
+  const START_Z_SPREAD = 110;
+  const END_Z_SPREAD = 1500;
+
+  const START_Z_OFFSET = -300;
+  const END_Z_OFFSET = 4600;
+
+  const LAYER_OX = CARD_W * 0.5;
+
+  const LAYER_OY = CARD_H * 0.5;
+
+  const LAYER_OFFSETS = [
+    [0, 0],
+    [1, 0],
+    [-1, 0],
+
+    [0, 1],
+    [0, -1],
+
+    [1, 1],
+    [-1, 1],
+
+    [1, -1],
+    [-1, -1],
+
+    [2, 0],
+    [-2, 0],
+
+    [0, 2],
+    [0, -2],
+  ];
+
+  const JITTER_X_AMOUNT = GRID_X * 0.3;
+
+  const JITTER_Y_AMOUNT = GRID_Y * 0.3;
+
+  const SCALE_MIN = 1;
+  const SCALE_MAX = 1.3;
+
+  const START_ROT_MAX = 0;
+
+  /* sebelumnya 0.03: terlalu lambat,
+     animasi ketinggalan saat scroll cepat */
+  const SCROLL_SMOOTH = 0.1;
+
+  /* Selesai animasi logo (0-1 dari runway).
+     Sisa runway = diam sebelum section berikut.
+     (sebelumnya 0.78) */
+  const ANIMATION_END_AT = 0.9;
+
+  /* Tablet + mobile (<=991px):
+     animasi selesai di titik ini dari jarak
+     pin -> section berikutnya muncul. */
+  const ANIMATION_END_AT_RESPONSIVE = 0.98;
+
+  /* Section berikut dianggap "muncul" saat
+     top-nya di (1 - nilai ini) x tinggi layar */
+  const NEXT_SECTION_OFFSET = 0.9;
+
+  /* =========================================
+     HERO
+     Urutan: heading SILENT POWER merapat
+     (80vw -> 47vw) sampai selesai, BARU hero
+     memudar, BARU animasi logo jalan.
+     Progress hero = 0-1 sepanjang
+     .hero-media-conatiner (sama seperti IX2).
+  ========================================= */
+
+  const HERO_HEADING_FROM = 0.27; // mulai merapat
+  const HERO_HEADING_TO = 0.6; // selesai merapat
+  const HERO_HEADING_W_START = 80; // vw
+  const HERO_HEADING_W_END = 47; // vw
+
+  /* jeda setelah heading selesai (x vh) */
+  const HERO_FADE_GAP = 0.04;
+
+  /* panjang fade hero (x vh). Fade baru
+     mulai saat logo sudah pin di tengah. */
+  const HERO_FADE_LENGTH = 0.35;
+
+  /* =========================================
+     URUTAN AKHIR (progress 0-1)
+     1. kartu lain memudar
+     2. kartu tengah sendirian lalu memudar
+     3. baru text section berikut muncul
+  ========================================= */
+
+  const OTHERS_FADE_START = 0.78;
+  const OTHERS_FADE_END = 0.85;
+
+  const CENTER_FADE_START = 0.87;
+  const CENTER_FADE_END = 0.93;
+
+  const NEXT_REVEAL_START = 0.93;
+  const NEXT_REVEAL_END = 0.98;
+
+  let centerFocusIndex = -1;
+
+  const focusCameraDirection = new THREE.Vector3();
+
+  const mouse = {
+    x: 0.05,
+    y: 0.05,
+  };
+
+  const mouseTarget = {
+    x: 0,
+    y: 0,
+  };
+
+  /* =========================================
+     CONTAINER
+  ========================================= */
+
+  const container = document.getElementById('container');
+
+  const logoSection = document.querySelector('.section-boss-logo');
+
+  const collageTrack = document.getElementById('boss-collage');
+
+  const nextSection = document.querySelector('.the-silent-section');
+
+  const responsiveMQ = window.matchMedia('(max-width: 991px)');
+
+  const heroContent = document.querySelector('.hero-media-content');
+
+  let lastHeroOpacity = -1;
+
+  let lastHeadingWidth = -1;
+
+  /* jarak scroll logo "ditahan" sampai hero
+     benar-benar hilang */
+  let heroHoldPx = 0;
+
+  const heroTrack = document.querySelector('.hero-media-conatiner');
+
+  let lastNextOpacity = -1;
+
+
+  /* =========================================
+     RENDERER SIZE
+  ========================================= */
+
+  function getRendererSize() {
+    const isResponsive = window.matchMedia('(max-width: 991px)').matches;
+
+    if (isResponsive) {
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+
+      return {
+        width: Math.max(1, Math.round(viewportWidth)),
+
+        height: Math.max(1, Math.round(viewportHeight)),
+      };
+    }
+
+    const rect = container.getBoundingClientRect();
+
+    return {
+      width: Math.max(1, Math.round(rect.width || window.innerWidth)),
+
+      height: Math.max(1, Math.round(rect.height || window.innerHeight)),
+    };
+  }
+
+  /* =========================================
+     BASE POINTS
+  ========================================= */
+
+  function buildBasePoints() {
+    const pts = [];
+
+    for (let i = 0; i < table.length; i += 5) {
+      pts.push({
+        symbol: table[i],
+
+        col: table[i + 3],
+
+        row: table[i + 4],
+      });
+    }
+
+    return pts;
+  }
+
+  function getImageUrl(symbol) {
+    return IMAGE_MAP[symbol] || '';
+  }
+
+  /* =========================================
+     INIT
+  ========================================= */
+
+  init();
+  animate();
+
+  function init() {
+    updateResponsiveConfig();
+
+    const { width: initialWidth, height: initialHeight } = getRendererSize();
+
+    /* =====================================
+       CAMERA
+    ===================================== */
+
+    camera = new THREE.PerspectiveCamera(
+      40,
+
+      initialWidth / Math.max(1, initialHeight),
+
+      1,
+
+      12000,
+    );
+
+    camera.position.set(0, 0, cameraStartZ);
+
+    /* =====================================
+       SCENE
+    ===================================== */
+
+    scene = new THREE.Scene();
+
+    const basePts = buildBasePoints();
+
+    const baseCount = basePts.length;
+
+    /* =====================================
+       OBJECTS
+    ===================================== */
+
+    for (let idx = 0; idx < TARGET_COUNT; idx++) {
+      const baseIndex = Math.floor(Math.random() * baseCount);
+
+      const layer = Math.floor(idx / baseCount);
+
+      const [oxN, oyN] = LAYER_OFFSETS[layer % LAYER_OFFSETS.length];
+
+      const bp = basePts[baseIndex];
+
+      const symbol = bp.symbol;
+
+      /* =====================================
+         DOM
+      ===================================== */
+
+      const element = document.createElement('div');
+
+      element.className = 'element';
+
+      element.style.width = `${CARD_W}px`;
+
+      element.style.height = `${CARD_H}px`;
+
+      const card = document.createElement('div');
+
+      card.className = 'card';
+
+      const img = document.createElement('img');
+
+      img.src = getImageUrl(symbol);
+
+      img.alt = symbol;
+
+      img.draggable = false;
+
+      card.appendChild(img);
+
+      element.appendChild(card);
+
+      img.onerror = () => {
+        card.innerHTML = '';
+
+        card.style.cssText += ';display:flex;' + 'align-items:center;' + 'justify-content:center;' + 'border:1px solid #ddd;';
+
+        card.textContent = symbol;
+      };
+
+      const obj = new THREE.CSS3DObject(element);
+
+      obj.element = element;
+
+      /* =====================================
+         END POSITION
+      ===================================== */
+
+      const sx = Math.random() * 4200 - 2100;
+
+      const sy = Math.random() * 2600 - 1300;
+
+      const szEnd = (Math.random() * 2 - 1) * END_Z_SPREAD;
+
+      obj.position.set(
+        sx,
+
+        sy,
+
+        END_Z_OFFSET + szEnd,
+      );
+
+      obj.rotation.set(
+        (Math.random() - 0.5) * 0.7,
+
+        (Math.random() - 0.5) * 0.7,
+
+        (Math.random() - 0.5) * 0.25,
+      );
+
+      scene.add(obj);
+
+      objects.push(obj);
+
+      /* =====================================
+         START POSITION
+      ===================================== */
+
+      const tx = bp.col * GRID_X;
+
+      const ty = -(bp.row * GRID_Y);
+
+      const tx2 = tx + oxN * LAYER_OX;
+
+      const ty2 = ty + oyN * LAYER_OY;
+
+      const jitterX = signedBiasedRandom() * JITTER_X_AMOUNT;
+
+      const jitterY = signedBiasedRandom() * JITTER_Y_AMOUNT;
+
+      const szStart = (Math.random() * 2 - 1) * START_Z_SPREAD;
+
+      const startTarget = new THREE.Object3D();
+
+      startTarget.position.set(
+        tx2 + jitterX,
+
+        ty2 + jitterY,
+
+        START_Z_OFFSET + szStart,
+      );
+
+      startTarget.rotation.set(
+        (Math.random() - 0.5) * START_ROT_MAX * 0.5,
+
+        (Math.random() - 0.5) * START_ROT_MAX * 0.5,
+
+        (Math.random() - 0.5) * START_ROT_MAX,
+      );
+
+      startTarget.updateMatrixWorld(true);
+
+      startKF.push({
+        pos: startTarget.position.clone(),
+
+        quat: startTarget.quaternion.clone(),
+      });
+
+      endKF.push({
+        pos: obj.position.clone(),
+
+        quat: obj.quaternion.clone(),
+      });
+
+      obj.position.copy(startKF[startKF.length - 1].pos);
+
+      obj.quaternion.copy(startKF[startKF.length - 1].quat);
+
+      zStartSpreads.push(szStart);
+
+      zEndSpreads.push(szEnd);
+
+      const cardScale = lerp(SCALE_MIN, SCALE_MAX, Math.random());
+
+      perCardScales.push(cardScale);
+
+      /*
+        Correct responsive scale
+        langsung dari initial frame.
+      */
+
+      obj.scale.setScalar(cardScale * globalStartSc);
+
+      cardEls.push(card);
+    }
+
+    /* =====================================
+       CENTER START FORMATION
+    ===================================== */
+
+    centerStartTargets();
+
+    const center = computeCenter(startKF.map((k) => k.pos));
+
+    const dists = startKF.map((k) => k.pos.distanceTo(center));
+
+    const maxDist = Math.max(...dists) || 1;
+
+    for (let i = 0; i < objects.length; i++) {
+      const norm = dists[i] / maxDist;
+
+      const wave = norm * 0.28;
+
+      const jitter = (Math.random() - 0.5) * 0.03;
+
+      delays.push(clamp01(wave + jitter));
+    }
+
+    /* =====================================
+       CENTER FOCUS
+    ===================================== */
+
+    centerFocusIndex = objects.reduce(
+      (bestIndex, _, index) => {
+        const startRadius = Math.hypot(
+          startKF[index].pos.x,
+
+          startKF[index].pos.y,
+        );
+
+        const bestStartRadius = Math.hypot(
+          startKF[bestIndex].pos.x,
+
+          startKF[bestIndex].pos.y,
+        );
+
+        const score = zEndSpreads[index] + startRadius * 0.22 + delays[index] * 120;
+
+        const bestScore = zEndSpreads[bestIndex] + bestStartRadius * 0.22 + delays[bestIndex] * 120;
+
+        return score < bestScore ? index : bestIndex;
+      },
+
+      0,
+    );
+
+    objects[centerFocusIndex].element.classList.add('is-center-focus');
+
+    /* =====================================
+       RENDERER
+    ===================================== */
+
+    renderer = new THREE.CSS3DRenderer();
+
+    renderer.setSize(initialWidth, initialHeight);
+
+    Object.assign(
+      renderer.domElement.style,
+
+      {
+        position: 'absolute',
+
+        top: '0',
+
+        left: '0',
+
+        width: `${initialWidth}px`,
+
+        height: `${initialHeight}px`,
+
+        overflow: 'hidden',
+      },
+    );
+
+    container.appendChild(renderer.domElement);
+
+    /* =====================================
+       RESIZE OBSERVER
+    ===================================== */
+
+    const resizeObserver = new ResizeObserver(requestResize);
+
+    resizeObserver.observe(container);
+
+    /* =====================================
+       EVENTS
+    ===================================== */
+
+    window.addEventListener(
+      'resize',
+
+      requestResize,
+
+      {
+        passive: true,
+      },
+    );
+
+    window.addEventListener(
+      'orientationchange',
+
+      () => {
+        requestResize();
+
+        setTimeout(requestResize, 100);
+
+        setTimeout(requestResize, 300);
+      },
+
+      {
+        passive: true,
+      },
+    );
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener(
+        'resize',
+
+        requestResize,
+
+        {
+          passive: true,
+        },
+      );
+    }
+
+    window.addEventListener(
+      'scroll',
+
+      onScroll,
+
+      {
+        passive: true,
+      },
+    );
+
+    window.addEventListener(
+      'load',
+
+      requestResize,
+
+      {
+        once: true,
+      },
+    );
+
+    window.addEventListener(
+      'pageshow',
+
+      requestResize,
+    );
+
+    window.addEventListener(
+      'mousemove',
+
+      (e) => {
+        mouseTarget.x = (e.clientX / window.innerWidth) * 2 - 1;
+
+        mouseTarget.y = -((e.clientY / window.innerHeight) * 2 - 1);
+      },
+
+      {
+        passive: true,
+      },
+    );
+
+    /* =====================================
+       WEBFLOW INITIAL RESIZE FIX
+    ===================================== */
+
+    requestAnimationFrame(() => {
+      onResize();
+
+      requestAnimationFrame(onResize);
+    });
+
+    setTimeout(onResize, 100);
+
+    setTimeout(onResize, 300);
+
+    setTimeout(onResize, 700);
+
+    onScroll();
+    render();
+  }
+
+  /* =========================================
+     RAF RESIZE
+  ========================================= */
+
+  let resizeRaf = null;
+
+  function requestResize() {
+    if (resizeRaf) {
+      cancelAnimationFrame(resizeRaf);
+    }
+
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = null;
+
+      onResize();
+    });
+  }
+
+  /* =========================================
+     RANDOM
+  ========================================= */
+
+  function signedBiasedRandom() {
+    const sign = Math.random() < 0.5 ? -1 : 1;
+
+    return sign * Math.pow(Math.random(), 0.55);
+  }
+
+  /* =========================================
+     CENTER START TARGETS
+  ========================================= */
+
+  function centerStartTargets() {
+    let minX = Infinity;
+    let maxX = -Infinity;
+
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const k of startKF) {
+      minX = Math.min(minX, k.pos.x);
+
+      maxX = Math.max(maxX, k.pos.x);
+
+      minY = Math.min(minY, k.pos.y);
+
+      maxY = Math.max(maxY, k.pos.y);
+    }
+
+    const cx = (minX + maxX) / 2;
+
+    const cy = (minY + maxY) / 2;
+
+    for (const k of startKF) {
+      k.pos.x -= cx;
+
+      k.pos.y -= cy;
+    }
+  }
+
+  /* =========================================
+     SCROLL
+  ========================================= */
+
+  /* =========================================
+     HERO FADE (sinkron langsung dgn scroll)
+  ========================================= */
+
+  function updateHeroFade() {
+    const pinEl = collageTrack || logoSection;
+
+    if (!pinEl || !heroContent || !heroTrack) {
+      heroHoldPx = 0;
+
+      return;
+    }
+
+    const viewportHeight = window.innerHeight;
+
+    const y = window.scrollY;
+
+    const heroRect = heroTrack.getBoundingClientRect();
+
+    const heroTop = heroRect.top + y;
+
+    const heroRun = heroRect.height + viewportHeight;
+
+    /* progress hero ala IX2 "scrolling in view" */
+    const heroP = (y - (heroTop - viewportHeight)) / Math.max(1, heroRun);
+
+    /* ----- heading merapat ----- */
+
+    const headingT = clamp01((heroP - HERO_HEADING_FROM) / (HERO_HEADING_TO - HERO_HEADING_FROM));
+
+    const headingWidth = Math.round(lerp(HERO_HEADING_W_START, HERO_HEADING_W_END, headingT) * 100) / 100;
+
+    if (headingWidth !== lastHeadingWidth) {
+      lastHeadingWidth = headingWidth;
+
+      document.documentElement.style.setProperty('--boss-hero-heading-w', `${headingWidth}vw`);
+    }
+
+    /* ----- fade setelah heading selesai ----- */
+
+    const headingEndY = heroTop - viewportHeight + HERO_HEADING_TO * heroRun;
+
+    /* #container pin saat track ini sampai top */
+    const pinY = pinEl.getBoundingClientRect().top + y;
+
+    /* mulai setelah heading selesai DAN logo
+       sudah diam di tengah (pin) */
+    const fadeStart = Math.max(headingEndY + viewportHeight * HERO_FADE_GAP, pinY);
+
+    const fadeEnd = fadeStart + viewportHeight * HERO_FADE_LENGTH;
+
+    heroHoldPx = Math.max(0, fadeEnd - pinY);
+
+    const t = clamp01((y - fadeStart) / Math.max(1, fadeEnd - fadeStart));
+
+    const opacity = Math.round((1 - smoothstep(t)) * 1000) / 1000;
+
+    if (opacity === lastHeroOpacity) {
+      return;
+    }
+
+    lastHeroOpacity = opacity;
+
+    document.documentElement.style.setProperty('--boss-hero-opacity', String(opacity));
+
+    heroContent.style.visibility = opacity <= 0 ? 'hidden' : '';
+  }
+
+  function onScroll() {
+    const section = logoSection;
+
+    if (!section) {
+      scrollP = 0;
+
+      return;
+    }
+
+    const viewportHeight = window.innerHeight;
+
+    /* =====================================
+       TABLET + MOBILE
+       Margin negatif Webflow bikin tinggi
+       .section-boss-logo tidak sama dengan
+       runway sticky. Pakai jarak nyata:
+       pin -> section berikut muncul.
+    ===================================== */
+
+    if (responsiveMQ.matches && collageTrack && nextSection) {
+      const trackRect = collageTrack.getBoundingClientRect();
+
+      const nextTop = nextSection.getBoundingClientRect().top;
+
+      const visibleRun = Math.max(
+        viewportHeight * 0.5,
+
+        nextTop - trackRect.top - viewportHeight * NEXT_SECTION_OFFSET,
+      );
+
+      const runAfterHero = Math.max(viewportHeight * 0.5, visibleRun - heroHoldPx);
+
+      scrollP = clamp01((-trackRect.top - heroHoldPx) / (runAfterHero * ANIMATION_END_AT_RESPONSIVE));
+
+      return;
+    }
+
+    const rect = section.getBoundingClientRect();
+
+    const fullScrollDistance = Math.max(
+      1,
+
+      rect.height - viewportHeight,
+    );
+
+    const animationDistance = Math.max(viewportHeight * 0.5, fullScrollDistance * ANIMATION_END_AT - heroHoldPx);
+
+    /* logo baru jalan setelah hero hilang */
+    scrollP = clamp01((-rect.top - heroHoldPx) / animationDistance);
+  }
+
+  /* =========================================
+     ANIMATION LOOP
+  ========================================= */
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    mouse.x += (mouseTarget.x - mouse.x) * 0.08;
+
+    mouse.y += (mouseTarget.y - mouse.y) * 0.08;
+
+    /* baca posisi tiap frame: tidak tergantung
+       event scroll yang bisa telat */
+    updateHeroFade();
+
+    onScroll();
+
+    scrollPSmooth += (scrollP - scrollPSmooth) * SCROLL_SMOOTH;
+
+    if (Math.abs(scrollP - scrollPSmooth) < 0.0005) {
+      scrollPSmooth = scrollP;
+    }
+
+    updateByScroll();
+  }
+
+  /* =========================================
+     UPDATE
+  ========================================= */
+
+  function updateByScroll() {
+    const pBase = scrollPSmooth;
+
+    updateCamera(pBase);
+
+    const maxZExtent =
+      Math.max(
+        Math.abs(START_Z_OFFSET) + START_Z_SPREAD * Math.max(1, zStartMult),
+
+        Math.abs(END_Z_OFFSET) + END_Z_SPREAD * Math.max(1, zEndMult),
+      ) * 1.1 || 1;
+
+    for (let i = 0; i < objects.length; i++) {
+      const o = objects[i];
+
+      const d = delays[i];
+
+      const lp = clamp01((pBase - d) / (1 - d));
+
+      const eased = smoothstep(lp);
+
+      const magnet = 1 - Math.pow(1 - eased, 3);
+
+      const lockMix = clamp01((lp - 0.72) / 0.28);
+
+      const p = lerp(
+        eased,
+
+        magnet,
+
+        lockMix,
+      );
+
+      /* =====================================
+         BASE POSITION
+      ===================================== */
+
+      o.position.lerpVectors(
+        startKF[i].pos,
+
+        endKF[i].pos,
+
+        p,
+      );
+
+      /* =====================================
+         RESPONSIVE UNIFORM FIT
+      =====================================
+
+         X dan Y memakai angka SAMA.
+
+         Jadi formasi tetap proporsional,
+         tidak gepeng horizontal.
+      ===================================== */
+
+      o.position.x *= sceneScale;
+
+      o.position.y *= sceneScale;
+
+      /* =====================================
+         ROTATION
+      ===================================== */
+
+      o.quaternion.copy(startKF[i].quat).slerp(endKF[i].quat, p);
+
+      /* =====================================
+         CENTER LOCK
+      ===================================== */
+
+      const centerLock = i === centerFocusIndex ? smoothstep(clamp01((pBase - 0.34) / 0.2)) : 0;
+
+      /* =====================================
+         Z DEPTH
+      ===================================== */
+
+      const dynStartZ = START_Z_OFFSET + zStartSpreads[i] * zStartMult;
+
+      const dynEndZ = END_Z_OFFSET + zEndSpreads[i] * zEndMult;
+
+      o.position.z = lerp(
+        dynStartZ,
+
+        dynEndZ,
+
+        p,
+      );
+
+      const depthNorm = clamp01(Math.abs(dynEndZ) / (END_Z_SPREAD * Math.max(1, zEndMult) + 1));
+
+      /* =====================================
+         PARALLAX
+      ===================================== */
+
+      const parAmp =
+        80 *
+        lerp(
+          1,
+
+          0.35,
+
+          depthNorm,
+        ) *
+        sceneParallax;
+
+      const parallaxMix = i === centerFocusIndex ? 1 - centerLock : 1;
+
+      o.position.x += mouse.x * parAmp * parallaxMix;
+
+      o.position.y += mouse.y * parAmp * parallaxMix;
+
+      /* =====================================
+         CARD SCALE
+      ===================================== */
+
+      const scaledStart = perCardScales[i] * globalStartSc;
+
+      const scaledEnd = perCardScales[i] * globalEndSc;
+
+      o.scale.setScalar(
+        lerp(
+          scaledStart,
+
+          scaledEnd,
+
+          p,
+        ),
+      );
+
+      /* =====================================
+         Z NORMAL
+      ===================================== */
+
+      const zNorm = clamp01((o.position.z + maxZExtent) / (maxZExtent * 2));
+
+      /* =====================================
+         HIDE END
+      ===================================== */
+
+      const HIDE_START = 0.95;
+
+      const hideT = clamp01((pBase - HIDE_START) / (1 - HIDE_START));
+
+      const sweep = smoothstep(hideT);
+
+      const SAFE_BEHIND = 900;
+
+      const minBehindZ = camera.position.z + SAFE_BEHIND;
+
+      o.position.z =
+        Math.max(
+          o.position.z,
+
+          minBehindZ,
+        ) *
+          sweep +
+        o.position.z * (1 - sweep);
+
+      /* =====================================
+         CENTER FOCUS
+      ===================================== */
+
+      if (i === centerFocusIndex) {
+        camera.getWorldDirection(focusCameraDirection);
+
+        const directionZ = Math.abs(focusCameraDirection.z) > 0.00001 ? focusCameraDirection.z : -0.00001;
+
+        const rayDistance = (o.position.z - camera.position.z) / directionZ;
+
+        const screenCenterX = camera.position.x + focusCameraDirection.x * rayDistance;
+
+        const screenCenterY = camera.position.y + focusCameraDirection.y * rayDistance;
+
+        o.position.x = lerp(
+          o.position.x,
+
+          screenCenterX,
+
+          centerLock,
+        );
+
+        o.position.y = lerp(
+          o.position.y,
+
+          screenCenterY,
+
+          centerLock,
+        );
+      }
+
+      /* =====================================
+         FADE OUT BERURUTAN
+      ===================================== */
+
+      const fadeStart = i === centerFocusIndex ? CENTER_FADE_START : OTHERS_FADE_START;
+
+      const fadeEnd = i === centerFocusIndex ? CENTER_FADE_END : OTHERS_FADE_END;
+
+      const fade = Math.round((1 - smoothstep(clamp01((pBase - fadeStart) / (fadeEnd - fadeStart)))) * 1000) / 1000;
+
+      if (cardFades[i] !== fade) {
+        cardFades[i] = fade;
+
+        o.element.style.opacity = String(fade);
+
+        o.element.style.visibility = fade <= 0 ? 'hidden' : '';
+      }
+
+      /* =====================================
+         SHADOW
+      ===================================== */
+
+      const shadowSize = shadowStr * 28 * zNorm;
+
+      const shadowOpacity = shadowStr * 0.65 * zNorm;
+
+      cardEls[i].style.boxShadow = shadowStr > 0.005 ? `0 ${shadowSize * 0.5}px ${shadowSize}px rgba(0,0,0,${shadowOpacity.toFixed(3)})` : 'none';
+
+      const brightness =
+        shadowDarken > 0.005
+          ? lerp(
+              1 - shadowDarken * 0.72,
+
+              1,
+
+              zNorm,
+            )
+          : 1;
+
+      cardEls[i].style.filter = brightness < 0.999 ? `brightness(${brightness.toFixed(3)})` : '';
+    }
+
+    updateNextReveal(pBase);
+
+    render();
+  }
+
+
+
+  function updateNextReveal(p) {
+    const opacity = Math.round(smoothstep(clamp01((p - NEXT_REVEAL_START) / (NEXT_REVEAL_END - NEXT_REVEAL_START))) * 1000) / 1000;
+
+    if (opacity === lastNextOpacity) {
+      return;
+    }
+
+    lastNextOpacity = opacity;
+
+    document.documentElement.style.setProperty('--boss-next-opacity', String(opacity));
+  }
+
+  /* =========================================
+     CAMERA
+  ========================================= */
+
+  function updateCamera(p) {
+    const pe = smoothstep(p);
+
+    const deep = easeInCubic(clamp01((p - 0.55) / 0.45));
+
+    camera.position.z = lerp(
+      cameraStartZ,
+
+      cameraEndZ,
+
+      deep,
+    );
+
+    camera.position.x = lerp(
+      cameraStartX,
+
+      0,
+
+      pe,
+    );
+
+    camera.position.y = lerp(
+      cameraStartY,
+
+      0,
+
+      pe,
+    );
+
+    camera.lookAt(0, 0, 0);
+  }
+
+
+  function onResize() {
+    if (!camera || !renderer || !container) {
+      return;
+    }
+
+    updateResponsiveConfig();
+
+    const { width, height } = getRendererSize();
+
+    camera.aspect = width / Math.max(1, height);
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(width, height, false);
+
+    renderer.domElement.style.width = `${width}px`;
+
+    renderer.domElement.style.height = `${height}px`;
+
+    renderer.domElement.style.left = '0px';
+
+    renderer.domElement.style.top = '0px';
+
+    onScroll();
+
+    render();
+  }
+
+  /* =========================================
+     RENDER
+  ========================================= */
+
+  function render() {
+    renderer.render(scene, camera);
+  }
+
+  /* =========================================
+     HELPERS
+  ========================================= */
+
+  function clamp01(x) {
+    return Math.min(
+      1,
+
+      Math.max(0, x),
+    );
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function smoothstep(t) {
+    return t * t * (3 - 2 * t);
+  }
+
+  function easeInCubic(t) {
+    return t * t * t;
+  }
+
+  function computeCenter(vecs) {
+    const c = new THREE.Vector3();
+
+    for (const v of vecs) {
+      c.add(v);
+    }
+
+    c.multiplyScalar(1 / Math.max(1, vecs.length));
+
+    return c;
+  }
+</script>
+
+
+<script>
+  const lenis2 = new Lenis({
+    lerp: 0.035,
+    wheelMultiplier: 0.25,
+    smoothWheel: true,
+    direction: 'vertical',
+    gestureDirection: 'vertical',
+    smoothTouch: false,
+    touchMultiplier: 1,
+    infinite: false,
+  });
+
+  if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+    lenis2.on('scroll', ScrollTrigger.update);
+
+    gsap.ticker.add((time) => {
+      lenis2.raf(time * 1000);
+    });
+
+    gsap.ticker.lagSmoothing(0);
+  } else {
+    function raf2(time) {
+      lenis2.raf(time);
+      requestAnimationFrame(raf2);
+    }
+    requestAnimationFrame(raf2);
+  }
+
+  /* DIHAPUS: dispatch 'scroll' manual bikin loop
+     (Lenis dengar event scroll -> emit lagi ->
+     "Maximum call stack size exceeded").
+     window.scrollTo dari Lenis sudah memicu
+     event scroll native. */
+
+  let isMenuOpen = false;
+  document.querySelectorAll('.menu-button-class-kamu').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      isMenuOpen = !isMenuOpen;
+      if (isMenuOpen) {
+        lenis2.stop();
+      } else {
+        lenis2.start();
+      }
+    });
+  });
+</script>
+
+<script src="https://unpkg.com/split-type"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    let splitType = new SplitType("[hoverstagger='text']", {
+      types: 'words,chars',
+      tagName: 'span',
+    });
+
+    $("[hoverstagger='link']").each(function (index) {
+      let text1 = $(this).find("[hoverstagger='text']").eq(0);
+      let text2 = $(this).find("[hoverstagger='text']").eq(1);
+
+      let tl = gsap.timeline({ paused: true });
+      tl.to(text1.find('.char'), { yPercent: -100, duration: 0.3, stagger: { amount: 0.2 } });
+      tl.from(text2.find('.char'), { yPercent: 100, duration: 0.3, stagger: { amount: 0.2 } }, 0);
+
+      $(this).on('mouseenter', function () {
+        tl.restart();
+      });
+      $(this).on('mouseleave', function () {
+        tl.reverse();
+      });
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const textWrapper = document.querySelector('.all-reach-big-font');
+    const textElement = document.querySelector('.all-reach-big-font h2');
+
+    if (!textWrapper || !textElement) return;
+
+    gsap.set(textWrapper, { clearProps: 'all' });
+
+    gsap.fromTo(
+      textWrapper,
+      {
+        x: '100vw',
+        xPercent: 0,
+      },
+      {
+        x: '-10vw',
+        xPercent: -100,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '.all-reach-track-contanier',
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1,
+        },
+      },
+    );
+
+    let proxy = { skew: 0 };
+    let skewSetter = gsap.quickSetter(textElement, 'skewX', 'deg');
+    let clamp = gsap.utils.clamp(-15, 15);
+
+    ScrollTrigger.create({
+      trigger: '.all-reach-track-contanier',
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: (self) => {
+        let skew = clamp(self.getVelocity() / -150);
+
+        if (Math.abs(skew) > Math.abs(proxy.skew)) {
+          proxy.skew = skew;
+          gsap.to(proxy, {
+            skew: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+            overwrite: true,
+            onUpdate: () => skewSetter(proxy.skew),
+          });
+        }
+      },
+    });
+  });
+</script>
+
+<script>
+  window.Webflow = window.Webflow || [];
+
+  window.Webflow.push(() => {
+    const initFloatingCards = () => {
+      if (typeof gsap === 'undefined') {
+        setTimeout(initFloatingCards, 100);
+        return;
+      }
+
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reduceMotion) return;
+
+      const mm = gsap.matchMedia();
+
+      mm.add('(min-width: 992px)', () => {
+        const cards = gsap.utils.toArray('.float-card');
+        const animations = [];
+
+        cards.forEach((card, index) => {
+          let motionWrapper = card.querySelector(':scope > .float-card-motion');
+
+          if (!motionWrapper) {
+            const content = card.firstElementChild;
+
+            if (!content) return;
+
+            motionWrapper = document.createElement('div');
+            motionWrapper.className = 'float-card-motion';
+
+            Object.assign(motionWrapper.style, {
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              willChange: 'transform',
+              transformStyle: 'preserve-3d',
+              backfaceVisibility: 'hidden',
+            });
+
+            card.insertBefore(motionWrapper, content);
+            motionWrapper.appendChild(content);
+          }
+
+          const direction = index % 2 === 0 ? -1 : 1;
+
+          gsap.set(motionWrapper, {
+            x: direction * 2,
+            y: direction * 4,
+            rotationZ: direction * 0.3,
+            force3D: true,
+          });
+
+          const animation = gsap.to(motionWrapper, {
+            x: direction * 7,
+            y: direction * 18,
+            rotationZ: direction * 1,
+            duration: 2.2 + index * 0.18,
+            delay: index * 0.15,
+            ease: 'sine.inOut',
+            repeat: -1,
+            yoyo: true,
+            force3D: true,
+          });
+
+          animations.push({
+            animation,
+            motionWrapper,
+          });
+        });
+
+        // Berjalan saat keluar dari desktop atau script dibersihkan
+        return () => {
+          animations.forEach(({ animation, motionWrapper }) => {
+            animation.kill();
+
+            gsap.set(motionWrapper, {
+              clearProps: 'transform',
+            });
+          });
+        };
+      });
+    };
+
+    initFloatingCards();
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    gsap.registerPlugin(ScrollTrigger, SplitText);
+
+    // Tunggu font selesai supaya pembagian line akurat
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+
+    const mm = gsap.matchMedia();
+
+    /* =========================================================
+       MOBILE ONLY — 991px KE BAWAH
+    ========================================================= */
+
+    mm.add('(max-width: 991px)', () => {
+      const targets = document.querySelectorAll(
+        '[anim-reveal="scroll"]'
+      );
+
+      const items = [];
+      const splits = [];
+
+      targets.forEach((element) => {
+
+
+        const split = new SplitText(element, {
+          type: 'lines',
+          linesClass: 'anim-reveal-line',
+        });
+
+        splits.push(split);
+
+        const lines = split.lines;
+
+
+        gsap.set(element, {
+          visibility: 'visible',
+        });
+
+        gsap.set(lines, {
+          yPercent: 60,
+          opacity: 0,
+          filter: 'blur(10px)',
+        });
+
+        const item = {
+          element,
+          lines,
+          visible: false,
+        };
+
+        item.reveal = () => {
+          if (item.visible) return;
+
+          item.visible = true;
+
+          gsap.killTweensOf(lines);
+
+          gsap.fromTo(
+            lines,
+            {
+              yPercent: 60,
+              opacity: 0,
+              filter: 'blur(10px)',
+            },
+            {
+              yPercent: 0,
+              opacity: 1,
+              filter: 'blur(0px)',
+              duration: 1.1,
+              ease: 'power3.out',
+              stagger: {
+                each: 0.12,
+                from: 'start',
+              },
+              overwrite: true,
+            }
+          );
+        };
+
+
+        item.hide = () => {
+          if (!item.visible) return;
+
+          item.visible = false;
+
+          gsap.killTweensOf(lines);
+
+          gsap.to(lines, {
+            yPercent: 30,
+            opacity: 0,
+            filter: 'blur(10px)',
+            duration: 0.5,
+            ease: 'power2.inOut',
+            stagger: {
+              each: 0.05,
+              from: 'start',
+            },
+            overwrite: true,
+          });
+        };
+
+        items.push(item);
+      });
+
+      function updateReveal() {
+        const viewportHeight = window.innerHeight;
+
+
+        const revealPoint = viewportHeight * 0.85;
+
+        items.forEach((item) => {
+          const rect =
+            item.element.getBoundingClientRect();
+
+          const isOnScreen =
+            rect.bottom > 0 &&
+            rect.top < viewportHeight;
+
+          const reachedRevealPoint =
+            rect.top <= revealPoint;
+
+          const fullyAbove =
+            rect.bottom <= 0;
+
+          const fullyBelow =
+            rect.top >= viewportHeight;
+
+
+          if (
+            isOnScreen &&
+            reachedRevealPoint
+          ) {
+            item.reveal();
+          }
+
+
+          if (
+            fullyAbove ||
+            fullyBelow
+          ) {
+            item.hide();
+          }
+        });
+      }
+
+
+      const trigger = ScrollTrigger.create({
+        start: 0,
+        end: 'max',
+
+        onUpdate: updateReveal,
+        onRefresh: updateReveal,
+      });
+
+
+      window.addEventListener(
+        'resize',
+        updateReveal
+      );
+
+
+      updateReveal();
+
+      ScrollTrigger.refresh();
+
+
+      return () => {
+        window.removeEventListener(
+          'resize',
+          updateReveal
+        );
+
+        trigger.kill();
+
+        items.forEach((item) => {
+          gsap.killTweensOf(item.lines);
+        });
+
+        splits.forEach((split) => {
+          split.revert();
+        });
+
+        targets.forEach((element) => {
+          gsap.set(element, {
+            clearProps: 'visibility',
+          });
+        });
+
+        ScrollTrigger.refresh();
+      };
+    });
+  });
+</script>

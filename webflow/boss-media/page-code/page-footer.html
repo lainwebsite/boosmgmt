@@ -1,13 +1,6 @@
-<!-- =========================================
-     LIBRARIES (one copy each)
-     Previously GSAP core was loaded 4x (3.13, 3.x, 3.15, 3.12.2),
-     ScrollTrigger 2x, Lenis 2x and React 18 UMD (unused). Each
-     later copy replaced the earlier one, so the page always ran
-     on GSAP 3.12.2 + ScrollTrigger 3.12.2 + Lenis 1.0.34. Only
-     those are kept, so behaviour stays identical.
-     SplitText / ScrambleText load before the core, as before they
-     ended up unregistered until registerPlugin() below.
-========================================= -->
+<!-- LIBRARIES, one copy each (the page always ran on GSAP 3.12.2 +
+     ScrollTrigger 3.12.2 + Lenis 1.0.34). Rollback + notes: repo
+     webflow/boss-media/page-code/page-footer.before-dedupe-2026-10-13.html -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.15/dist/ScrambleTextPlugin.min.js"></script>
@@ -15,25 +8,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 <script src="https://unpkg.com/@studio-freight/lenis@1.0.34/dist/lenis.min.js"></script>
-
-<script>
-  window.Webflow = window.Webflow || [];
-
-  window.Webflow.push(function () {
-    const form = document.querySelector('#email-form');
-    const submitButton = document.querySelector('.link-text.media');
-
-    if (!form || !submitButton) return;
-
-    submitButton.addEventListener('click', function (event) {
-      event.preventDefault();
-
-      // Menjalankan validasi required bawaan browser,
-      // kemudian submit melalui sistem form Webflow.
-      form.requestSubmit();
-    });
-  });
-</script>
 
 <script>
   /* =========================================
@@ -334,6 +308,8 @@
   const perCardScales = [];
   const cardEls = [];
   const cardFades = [];
+  const cardShadows = [];
+  const cardFilters = [];
 
   let scrollP = 0;
   let scrollPSmooth = 0;
@@ -534,6 +510,26 @@
 
   function getImageUrl(symbol) {
     return IMAGE_MAP[symbol] || '';
+  }
+
+  /* PERF: skip frames when hero + collage are off screen, or when
+     nothing moved (cards would be drawn identically) */
+  let collageNear = true, forceFrame = true, snapSmooth = false;
+  let lastDrawnP = -1, lastDrawnMX = 0, lastDrawnMY = 0;
+
+  if ('IntersectionObserver' in window) {
+    const nearMap = new Map();
+    const nearObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => nearMap.set(entry.target, entry.isIntersecting));
+      const near = [...nearMap.values()].some(Boolean);
+      /* back near: start from the real scroll value */
+      if (near && !collageNear) forceFrame = snapSmooth = true;
+      collageNear = near;
+    }, { rootMargin: '200px 0px' });
+    [container, heroTrack, logoSection, collageTrack].filter(Boolean).forEach((el) => {
+      nearMap.set(el, true);
+      nearObserver.observe(el);
+    });
   }
 
   /* =========================================
@@ -1115,17 +1111,31 @@
 
     mouse.y += (mouseTarget.y - mouse.y) * 0.08;
 
+    if (!collageNear) return;
+
     /* baca posisi tiap frame: tidak tergantung
        event scroll yang bisa telat */
     updateHeroFade();
 
     onScroll();
 
+    if (snapSmooth) {
+      snapSmooth = false;
+      scrollPSmooth = scrollP;
+    }
+
     scrollPSmooth += (scrollP - scrollPSmooth) * SCROLL_SMOOTH;
 
     if (Math.abs(scrollP - scrollPSmooth) < 0.0005) {
       scrollPSmooth = scrollP;
     }
+
+    if (!forceFrame && scrollPSmooth === lastDrawnP && Math.abs(mouse.x - lastDrawnMX) < 0.0001 && Math.abs(mouse.y - lastDrawnMY) < 0.0001) return;
+
+    forceFrame = false;
+    lastDrawnP = scrollPSmooth;
+    lastDrawnMX = mouse.x;
+    lastDrawnMY = mouse.y;
 
     updateByScroll();
   }
@@ -1349,7 +1359,9 @@
 
       const shadowOpacity = shadowStr * 0.65 * zNorm;
 
-      cardEls[i].style.boxShadow = shadowStr > 0.005 ? `0 ${shadowSize * 0.5}px ${shadowSize}px rgba(0,0,0,${shadowOpacity.toFixed(3)})` : 'none';
+      const boxShadow = shadowStr > 0.005 ? `0 ${shadowSize * 0.5}px ${shadowSize}px rgba(0,0,0,${shadowOpacity.toFixed(3)})` : 'none';
+
+      if (cardShadows[i] !== boxShadow) cardEls[i].style.boxShadow = cardShadows[i] = boxShadow;
 
       const brightness =
         shadowDarken > 0.005
@@ -1362,7 +1374,9 @@
             )
           : 1;
 
-      cardEls[i].style.filter = brightness < 0.999 ? `brightness(${brightness.toFixed(3)})` : '';
+      const filter = brightness < 0.999 ? `brightness(${brightness.toFixed(3)})` : '';
+
+      if (cardFilters[i] !== filter) cardEls[i].style.filter = cardFilters[i] = filter;
     }
 
     updateNextReveal(pBase);
@@ -1444,6 +1458,8 @@
 
     renderer.domElement.style.top = '0px';
 
+    forceFrame = true;
+
     onScroll();
 
     render();
@@ -1493,7 +1509,6 @@
     return c;
   }
 </script>
-
 
 <script>
   const lenis2 = new Lenis({
@@ -1622,94 +1637,6 @@
         }
       },
     });
-  });
-</script>
-
-<script>
-  window.Webflow = window.Webflow || [];
-
-  window.Webflow.push(() => {
-    const initFloatingCards = () => {
-      if (typeof gsap === 'undefined') {
-        setTimeout(initFloatingCards, 100);
-        return;
-      }
-
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      if (reduceMotion) return;
-
-      const mm = gsap.matchMedia();
-
-      mm.add('(min-width: 992px)', () => {
-        const cards = gsap.utils.toArray('.float-card');
-        const animations = [];
-
-        cards.forEach((card, index) => {
-          let motionWrapper = card.querySelector(':scope > .float-card-motion');
-
-          if (!motionWrapper) {
-            const content = card.firstElementChild;
-
-            if (!content) return;
-
-            motionWrapper = document.createElement('div');
-            motionWrapper.className = 'float-card-motion';
-
-            Object.assign(motionWrapper.style, {
-              width: '100%',
-              height: '100%',
-              display: 'block',
-              willChange: 'transform',
-              transformStyle: 'preserve-3d',
-              backfaceVisibility: 'hidden',
-            });
-
-            card.insertBefore(motionWrapper, content);
-            motionWrapper.appendChild(content);
-          }
-
-          const direction = index % 2 === 0 ? -1 : 1;
-
-          gsap.set(motionWrapper, {
-            x: direction * 2,
-            y: direction * 4,
-            rotationZ: direction * 0.3,
-            force3D: true,
-          });
-
-          const animation = gsap.to(motionWrapper, {
-            x: direction * 7,
-            y: direction * 18,
-            rotationZ: direction * 1,
-            duration: 2.2 + index * 0.18,
-            delay: index * 0.15,
-            ease: 'sine.inOut',
-            repeat: -1,
-            yoyo: true,
-            force3D: true,
-          });
-
-          animations.push({
-            animation,
-            motionWrapper,
-          });
-        });
-
-        // Berjalan saat keluar dari desktop atau script dibersihkan
-        return () => {
-          animations.forEach(({ animation, motionWrapper }) => {
-            animation.kill();
-
-            gsap.set(motionWrapper, {
-              clearProps: 'transform',
-            });
-          });
-        };
-      });
-    };
-
-    initFloatingCards();
   });
 </script>
 

@@ -1,0 +1,542 @@
+<script>
+  window.Webflow = window.Webflow || [];
+
+  window.Webflow.push(() => {
+    const initVisualTerminalText = () => {
+      if (typeof gsap === "undefined") {
+        setTimeout(initVisualTerminalText, 100);
+        return;
+      }
+
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      const defaultSymbols =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%&*+-=/<>[]{}";
+
+      const terminalItems = [];
+
+      /*
+       * Membaca total opacity elemen dan seluruh parent.
+       * Berguna jika Webflow juga menganimasikan opacity.
+       */
+      const getInheritedOpacity = (element) => {
+        let opacity = 1;
+        let currentElement = element;
+
+        while (
+          currentElement &&
+          currentElement !== document.documentElement
+        ) {
+          const style = window.getComputedStyle(currentElement);
+
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden"
+          ) {
+            return 0;
+          }
+
+          opacity *= Number(style.opacity) || 0;
+
+          if (opacity <= 0.02) {
+            return 0;
+          }
+
+          currentElement = currentElement.parentElement;
+        }
+
+        return opacity;
+      };
+
+      /*
+       * Memotong rectangle berdasarkan viewport dan
+       * parent yang menggunakan overflow hidden/clip.
+       */
+      const getVisualRectangle = (element) => {
+        const elementRect = element.getBoundingClientRect();
+
+        if (
+          elementRect.width <= 0 ||
+          elementRect.height <= 0
+        ) {
+          return null;
+        }
+
+        const viewportWidth =
+          document.documentElement.clientWidth;
+
+        const viewportHeight =
+          document.documentElement.clientHeight;
+
+        let visibleRect = {
+          left: Math.max(0, elementRect.left),
+          top: Math.max(0, elementRect.top),
+          right: Math.min(viewportWidth, elementRect.right),
+          bottom: Math.min(viewportHeight, elementRect.bottom)
+        };
+
+        if (
+          visibleRect.right <= visibleRect.left ||
+          visibleRect.bottom <= visibleRect.top
+        ) {
+          return null;
+        }
+
+        let parent = element.parentElement;
+
+        while (
+          parent &&
+          parent !== document.body &&
+          parent !== document.documentElement
+        ) {
+          const style = window.getComputedStyle(parent);
+
+          if (
+            style.display === "none" ||
+            style.visibility === "hidden"
+          ) {
+            return null;
+          }
+
+          const clipsX = [
+            "hidden",
+            "clip",
+            "auto",
+            "scroll"
+          ].includes(style.overflowX);
+
+          const clipsY = [
+            "hidden",
+            "clip",
+            "auto",
+            "scroll"
+          ].includes(style.overflowY);
+
+          if (clipsX || clipsY) {
+            const parentRect = parent.getBoundingClientRect();
+
+            if (clipsX) {
+              visibleRect.left = Math.max(
+                visibleRect.left,
+                parentRect.left
+              );
+
+              visibleRect.right = Math.min(
+                visibleRect.right,
+                parentRect.right
+              );
+            }
+
+            if (clipsY) {
+              visibleRect.top = Math.max(
+                visibleRect.top,
+                parentRect.top
+              );
+
+              visibleRect.bottom = Math.min(
+                visibleRect.bottom,
+                parentRect.bottom
+              );
+            }
+
+            if (
+              visibleRect.right <= visibleRect.left ||
+              visibleRect.bottom <= visibleRect.top
+            ) {
+              return null;
+            }
+          }
+
+          parent = parent.parentElement;
+        }
+
+        return {
+          original: elementRect,
+          visible: visibleRect
+        };
+      };
+
+      /*
+       * Menghasilkan persentase elemen yang benar-benar
+       * terlihat secara visual pada monitor.
+       *
+       * Nilai:
+       * 0   = tidak terlihat
+       * 0.5 = sekitar 50% terlihat
+       * 1   = terlihat sepenuhnya
+       */
+      const getVisualVisibilityRatio = (element) => {
+        if (getInheritedOpacity(element) <= 0.02) {
+          return 0;
+        }
+
+        const rectangles = getVisualRectangle(element);
+
+        if (!rectangles) {
+          return 0;
+        }
+
+        const originalArea =
+          rectangles.original.width *
+          rectangles.original.height;
+
+        const visibleWidth =
+          rectangles.visible.right -
+          rectangles.visible.left;
+
+        const visibleHeight =
+          rectangles.visible.bottom -
+          rectangles.visible.top;
+
+        const visibleArea =
+          visibleWidth * visibleHeight;
+
+        if (originalArea <= 0 || visibleArea <= 0) {
+          return 0;
+        }
+
+        return Math.min(1, visibleArea / originalArea);
+      };
+
+      /*
+       * Memisahkan text node menjadi karakter,
+       * tetapi tetap mempertahankan nested span,
+       * strong, em, dan line break.
+       */
+      const splitTerminalText = (element) => {
+        const textNodes = [];
+
+        const walker = document.createTreeWalker(
+          element,
+          NodeFilter.SHOW_TEXT,
+          {
+            acceptNode(node) {
+              const parent = node.parentElement;
+
+              if (!parent) {
+                return NodeFilter.FILTER_REJECT;
+              }
+
+              if (parent.closest("[data-terminal-ignore]")) {
+                return NodeFilter.FILTER_REJECT;
+              }
+
+              if (!node.nodeValue || !node.nodeValue.trim()) {
+                return NodeFilter.FILTER_REJECT;
+              }
+
+              return NodeFilter.FILTER_ACCEPT;
+            }
+          }
+        );
+
+        while (walker.nextNode()) {
+          textNodes.push(walker.currentNode);
+        }
+
+        textNodes.forEach((textNode) => {
+          const fragment = document.createDocumentFragment();
+          const parts = textNode.nodeValue.split(/(\s+)/);
+
+          parts.forEach((part) => {
+            if (!part) return;
+
+            if (/^\s+$/.test(part)) {
+              fragment.appendChild(
+                document.createTextNode(part)
+              );
+
+              return;
+            }
+
+            const word = document.createElement("span");
+
+            word.className = "terminal-word";
+            word.setAttribute("aria-hidden", "true");
+
+            Array.from(part).forEach((character) => {
+              const characterElement =
+                document.createElement("span");
+
+              characterElement.className = "terminal-char";
+
+              characterElement.dataset.originalCharacter =
+                character;
+
+              characterElement.textContent = character;
+
+              word.appendChild(characterElement);
+            });
+
+            fragment.appendChild(word);
+          });
+
+          textNode.parentNode.replaceChild(
+            fragment,
+            textNode
+          );
+        });
+
+        return Array.from(
+          element.querySelectorAll(".terminal-char")
+        );
+      };
+
+      const initializeTerminalElement = (element) => {
+        if (
+          element.dataset.terminalInitialized === "true"
+        ) {
+          return;
+        }
+
+        element.dataset.terminalInitialized = "true";
+
+        const accessibleText = element.textContent
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (accessibleText) {
+          element.setAttribute(
+            "aria-label",
+            accessibleText
+          );
+        }
+
+        const characters = splitTerminalText(element);
+
+        if (!characters.length) return;
+
+        if (reduceMotion) {
+          characters.forEach((character) => {
+            character.textContent =
+              character.dataset.originalCharacter;
+
+            character.style.opacity = "1";
+          });
+
+          return;
+        }
+
+        const speed = Math.max(
+          0.005,
+          Number(element.dataset.terminalSpeed) || 0.028
+        );
+
+        const delay = Math.max(
+          0,
+          Number(element.dataset.terminalDelay) || 0
+        );
+
+        const maxDuration = Math.max(
+          0.4,
+          Number(element.dataset.terminalMaxDuration) || 4
+        );
+
+        /*
+         * Persentase minimal elemen yang harus terlihat.
+         * Default 20%.
+         */
+        const visibleThreshold = gsap.utils.clamp(
+          0.01,
+          1,
+          Number(element.dataset.terminalThreshold) || 0.2
+        );
+
+        const shouldRepeat =
+          element.dataset.terminalRepeat === "true";
+
+        const symbols =
+          element.dataset.terminalSymbols ||
+          defaultSymbols;
+
+        const state = {
+          progress: 0
+        };
+
+        let hasPlayed = false;
+        let isInside = false;
+        let lastResolvedIndex = -1;
+
+        const randomSymbol = () => {
+          return symbols[
+            Math.floor(Math.random() * symbols.length)
+          ];
+        };
+
+        const resetAnimation = () => {
+          state.progress = 0;
+          lastResolvedIndex = -1;
+
+          element.classList.remove("is-typing");
+
+          characters.forEach((character) => {
+            character.textContent = randomSymbol();
+            character.style.opacity = "0";
+          });
+        };
+
+        const completeAnimation = () => {
+          characters.forEach((character) => {
+            character.textContent =
+              character.dataset.originalCharacter;
+
+            character.style.opacity = "1";
+          });
+
+          element.classList.remove("is-typing");
+        };
+
+        const updateCharacters = () => {
+          const rawIndex = Math.floor(state.progress);
+
+          const activeIndex = Math.min(
+            characters.length - 1,
+            rawIndex
+          );
+
+          const resolvedIndex = rawIndex - 1;
+
+          if (resolvedIndex > lastResolvedIndex) {
+            for (
+              let index = lastResolvedIndex + 1;
+              index <= resolvedIndex &&
+              index < characters.length;
+              index++
+            ) {
+              characters[index].textContent =
+                characters[index].dataset.originalCharacter;
+
+              characters[index].style.opacity = "1";
+            }
+
+            lastResolvedIndex = resolvedIndex;
+          }
+
+          if (
+            activeIndex >= 0 &&
+            activeIndex < characters.length
+          ) {
+            characters[activeIndex].textContent =
+              randomSymbol();
+
+            characters[activeIndex].style.opacity = "1";
+          }
+        };
+
+        const duration = Math.min(
+          maxDuration,
+          Math.max(0.4, characters.length * speed)
+        );
+
+        const animation = gsap.to(state, {
+          progress: characters.length,
+          duration,
+          delay,
+          ease: "none",
+          paused: true,
+          onStart() {
+            element.classList.add("is-typing");
+          },
+          onUpdate: updateCharacters,
+          onComplete: completeAnimation
+        });
+
+        resetAnimation();
+
+        terminalItems.push({
+          element,
+          animation,
+          resetAnimation,
+          visibleThreshold,
+          shouldRepeat,
+          get hasPlayed() {
+            return hasPlayed;
+          },
+          set hasPlayed(value) {
+            hasPlayed = value;
+          },
+          get isInside() {
+            return isInside;
+          },
+          set isInside(value) {
+            isInside = value;
+          }
+        });
+      };
+
+      document
+        .querySelectorAll(".terminal-text")
+        .forEach(initializeTerminalElement);
+
+      /*
+       * Menggunakan GSAP ticker agar pembacaan posisi
+       * sinkron dengan transform dan animasi Webflow.
+       */
+      let lastCheckTime = 0;
+
+      const monitorVisualPosition = () => {
+        const currentTime = performance.now();
+
+        /*
+         * Mengecek sekitar 20 kali per detik.
+         * Lebih ringan daripada setiap frame.
+         */
+        if (currentTime - lastCheckTime < 50) {
+          return;
+        }
+
+        lastCheckTime = currentTime;
+
+        terminalItems.forEach((item) => {
+          const visibilityRatio =
+            getVisualVisibilityRatio(item.element);
+
+          const isVisuallyInside =
+            visibilityRatio >= item.visibleThreshold;
+
+          if (
+            isVisuallyInside &&
+            !item.isInside &&
+            (!item.hasPlayed || item.shouldRepeat)
+          ) {
+            item.isInside = true;
+            item.hasPlayed = true;
+
+            item.animation.restart(true);
+          }
+
+          /*
+           * Hysteresis:
+           * baru dianggap keluar setelah visualnya
+           * hampir sepenuhnya hilang.
+           */
+          if (
+            item.isInside &&
+            visibilityRatio <= 0.01
+          ) {
+            item.isInside = false;
+
+            if (item.shouldRepeat) {
+              item.animation.pause(0);
+              item.resetAnimation();
+            }
+          }
+        });
+      };
+
+      gsap.ticker.add(monitorVisualPosition);
+
+      window.addEventListener(
+        "pagehide",
+        () => {
+          gsap.ticker.remove(monitorVisualPosition);
+        },
+        { once: true }
+      );
+    };
+
+    initVisualTerminalText();
+  });
+</script>
