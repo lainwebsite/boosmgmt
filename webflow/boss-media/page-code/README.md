@@ -84,3 +84,25 @@ Follow-up: on iPhone the typed text still showed Webflow's default dark gray (`#
 - sets `color` and `-webkit-text-fill-color` to #fbfbf7 with `!important` on `#email-form .text-field`, including `:focus`;
 - keeps the placeholder #999;
 - turns picked dropdown values and autofilled fields white.
+
+## Page footer: duplicate libraries removed (2026-10-13)
+`page-footer.html` is the live footer code. `page-footer.before-dedupe-2026-10-13.html` is the rollback copy.
+
+The footer loaded:
+- GSAP core 4x: 3.13.0, 3.x (3.15.0), 3.15 and 3.12.2;
+- ScrollTrigger 2x;
+- Lenis 2x (1.0.33 and 1.0.34);
+- React 18 + ReactDOM UMD, which nothing used (the filler embed has its own ESM React).
+
+Every copy replaced the one before it, so all runtime code (lenis2, hover stagger, all-reach text, float cards, anim-reveal, terminal text, filler) ran on the last ones: GSAP 3.12.2, ScrollTrigger 3.12.2 and Lenis 1.0.34. Only those are kept now. SplitText and ScrambleText 3.15 load before the core, as their effective registration was before.
+
+Script tags went from 15 to 8, with roughly 400 KB less JS to download and parse.
+
+`test/footer-libs-equivalence.test.mjs` serves the CDN URLs from npm packages and compares old vs new in Chromium. It checks:
+- the gsap and ScrollTrigger versions, and that ScrollTrigger is on the same core;
+- the registered plugins;
+- which Lenis build is used, and the Lenis scroll result;
+- that three/CSS3D are present;
+- that there are no new errors.
+
+Result: no differences.
