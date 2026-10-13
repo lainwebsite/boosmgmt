@@ -15,3 +15,6 @@ Embed element `f13cec74-4711-20d9-b2e1-6584afb7ad2f`, renders into `#boss-logo`.
    "three" pointed at the wrong build. The import map is removed and the module imports
    full URLs: `https://esm.sh/three@0.185.0` and
    `https://esm.sh/three@0.185.0/examples/jsm/loaders/SVGLoader.js`.
+
+## Logo size +15% (2026-10-13)
+The page head CSS sizes the logo with `#boss-logo.canvas.media`: it was `width: 100%` and `max-width: 45em`, and is now `width: 115%` and `max-width: 52em`. The camera fit in Code Embed 9 follows the container size, so the logo scales with it. The box stays centered because it is absolutely positioned inside the flex `cta-content-media-in-wrapp`.
