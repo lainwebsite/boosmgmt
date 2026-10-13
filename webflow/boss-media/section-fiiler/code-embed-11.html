@@ -14,6 +14,9 @@
      - .filler-media is held at top:0 from that moment until
        CSS sticky takes over, so the reveal never runs while
        the media is still scrolling in
+     - RESPONSIVE: earlier start offset + entry progress that
+       skips the part of the diagonal cropped off-screen on
+       portrait (mobile / tablet), so first tiles show at once
      - DO NOT change diagonal direction
 ========================================================= -->
 
@@ -21,24 +24,15 @@
 <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin />
 <link rel="preconnect" href="https://s3.amazonaws.com" crossorigin />
 
-<!-- =========================================================
-     PRELOAD
-========================================================= -->
-
 <link rel="preload" as="image" fetchpriority="high" href="https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a9a2c76833d25a03540b339_aabb04088b730836a3e21d62f1e4bf8cea3d65c6d93481c60d218cf60c70285f.webp" />
 
 <link rel="preload" as="image" crossorigin="anonymous" href="https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a44913dce7d87918a95ea64_b..svg" />
 
 <style>
-  /* =========================================================
-   DESKTOP SPACING
-========================================================= */
-
   @media screen and (min-width: 992px) {
     .section-fiiler {
       margin-top: 0 !important;
       margin-bottom: 0 !important;
-
       padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
@@ -46,105 +40,86 @@
     .section-fiiler > .padding-vertical.padding-large {
       margin-top: 0 !important;
       margin-bottom: 0 !important;
-
       padding-top: 0 !important;
       padding-bottom: 0 !important;
     }
 
     .section-fiiler .track-filler {
       margin-bottom: 0 !important;
-
       padding-top: 0 !important;
       padding-bottom: 0 !important;
+
+      /* =====================================
+         RUNWAY STICKY (desktop)
+         Sebelumnya 500vh (Webflow).
+         160vw = overlap .what-we-do-section
+         (margin-top -160vw), jangan diubah.
+         Angka vh = panjang yang terasa:
+         kecil = lebih cepat selesai.
+      ===================================== */
+      height: calc(160vw + 10vh) !important;
+    }
+
+    /* =====================================
+       TARIK FILLER KE ATAS (desktop)
+       Setelah cards keluar, track
+       who-we-work masih panjang kosong.
+       Filler ditarik ke atas supaya tidak
+       ada jarak scroll yang "diam".
+       Lebih besar = runway lebih pendek.
+    ===================================== */
+    .section-fiiler {
+      margin-top: calc(var(--boss-filler-pull, 165vw) * -1) !important;
     }
   }
 
-  /* =========================================================
-   MEDIA
-========================================================= */
-
   .filler-media {
-
     width: 100%;
-
     min-height: 100vh;
     min-height: 100dvh;
-
     overflow: hidden;
-
     isolation: isolate;
-
     background-color: transparent !important;
   }
 
-  /* =========================================================
-   HARD POSTER
-========================================================= */
-
   #boss-media-hard-poster {
     position: absolute !important;
-
     inset: 0 !important;
-
     z-index: 9999 !important;
-
     display: block !important;
-
     width: 100% !important;
     height: 100% !important;
-
     min-width: 100% !important;
     min-height: 100% !important;
-
     max-width: none !important;
-
     object-fit: cover !important;
     object-position: center center !important;
-
     opacity: 1 !important;
     visibility: visible !important;
-
     pointer-events: none !important;
-
     transform: translate3d(0, 0, 0) !important;
     -webkit-transform: translate3d(0, 0, 0) !important;
-
     backface-visibility: hidden !important;
     -webkit-backface-visibility: hidden !important;
-
     transition:
       opacity 0.4s ease,
       visibility 0.4s ease !important;
   }
 
-  /* =========================================================
-   CANVAS
-========================================================= */
-
   #webgpu-canvas {
     position: absolute !important;
-
     inset: 0 !important;
-
     z-index: 1 !important;
-
     width: 100% !important;
     height: 100% !important;
-
     display: block !important;
-
     opacity: 1 !important;
     visibility: visible !important;
-
     overflow: hidden;
-
     pointer-events: none;
-
     background: transparent !important;
-
     transform: translate3d(0, 0, 0);
     -webkit-transform: translate3d(0, 0, 0);
-
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
@@ -154,16 +129,10 @@
   #webgpu-canvas canvas {
     width: 100% !important;
     height: 100% !important;
-
     display: block !important;
-
     background: transparent !important;
   }
 </style>
-
-<!-- =========================================================
-     HARD FALLBACK
-========================================================= -->
 
 <script>
   (() => {
@@ -183,87 +152,54 @@
     }
 
     function forcePosterVisible(poster) {
-      if (!poster || state.confirmed) {
-        return;
-      }
+      if (!poster || state.confirmed) return;
 
       poster.style.setProperty('display', 'block', 'important');
-
       poster.style.setProperty('position', 'absolute', 'important');
-
       poster.style.setProperty('inset', '0', 'important');
-
       poster.style.setProperty('z-index', '9999', 'important');
-
       poster.style.setProperty('width', '100%', 'important');
-
       poster.style.setProperty('height', '100%', 'important');
-
       poster.style.setProperty('min-width', '100%', 'important');
-
       poster.style.setProperty('min-height', '100%', 'important');
-
       poster.style.setProperty('max-width', 'none', 'important');
-
       poster.style.setProperty('object-fit', 'cover', 'important');
-
       poster.style.setProperty('object-position', 'center', 'important');
-
       poster.style.setProperty('opacity', '1', 'important');
-
       poster.style.setProperty('visibility', 'visible', 'important');
-
       poster.style.setProperty('pointer-events', 'none', 'important');
     }
 
     function ensureFallback() {
-      if (state.confirmed) {
-        return true;
-      }
+      if (state.confirmed) return true;
 
       const host = findHost();
 
-      if (!host) {
-        return false;
-      }
+      if (!host) return false;
 
       state.host = host;
 
-      const position = getComputedStyle(host).position;
-
-      if (position === 'static') {
+      if (getComputedStyle(host).position === 'static') {
         host.style.setProperty('position', 'relative', 'important');
       }
 
       host.style.setProperty('background-image', `url("${POSTER_URL}")`, 'important');
-
       host.style.setProperty('background-size', 'cover', 'important');
-
       host.style.setProperty('background-position', 'center', 'important');
-
       host.style.setProperty('background-repeat', 'no-repeat', 'important');
 
       let poster = host.querySelector('#boss-media-hard-poster');
 
       if (!poster) {
         poster = document.createElement('img');
-
         poster.id = 'boss-media-hard-poster';
-
         poster.alt = '';
-
         poster.setAttribute('aria-hidden', 'true');
-
         poster.setAttribute('loading', 'eager');
-
         poster.setAttribute('fetchpriority', 'high');
-
         poster.setAttribute('decoding', 'sync');
-
         forcePosterVisible(poster);
-
         host.insertBefore(poster, host.firstChild);
-
         poster.src = POSTER_URL;
       }
 
@@ -275,27 +211,20 @@
     }
 
     window.BOSS_MEDIA_CONFIRM_READY = function () {
-      if (state.confirmed) {
-        return;
-      }
+      if (state.confirmed) return;
 
       const host = state.host || findHost();
-
       const poster = state.poster || host?.querySelector('#boss-media-hard-poster');
 
-      if (!host || !poster) {
-        return;
-      }
+      if (!host || !poster) return;
 
       state.confirmed = true;
 
       poster.style.setProperty('transition', 'opacity .4s ease', 'important');
-
       poster.style.setProperty('opacity', '0', 'important');
 
       setTimeout(() => {
         poster.style.setProperty('visibility', 'hidden', 'important');
-
         host.style.setProperty('background-image', 'none', 'important');
       }, 450);
 
@@ -303,9 +232,7 @@
     };
 
     function start() {
-      if (ensureFallback()) {
-        return;
-      }
+      if (ensureFallback()) return;
 
       let attempts = 0;
 
@@ -320,19 +247,14 @@
 
     start();
 
-    document.addEventListener('DOMContentLoaded', start, {
-      once: true,
-    });
+    document.addEventListener('DOMContentLoaded', start, { once: true });
 
     window.Webflow = window.Webflow || [];
-
     window.Webflow.push(start);
 
     if ('MutationObserver' in window) {
       state.observer = new MutationObserver(() => {
-        if (!state.confirmed) {
-          ensureFallback();
-        }
+        if (!state.confirmed) ensureFallback();
       });
 
       state.observer.observe(document.documentElement, {
@@ -342,10 +264,6 @@
     }
   })();
 </script>
-
-<!-- =========================================================
-     IMPORT MAP
-========================================================= -->
 
 <script type="importmap">
   {
@@ -366,20 +284,11 @@
 </script>
 
 <script type="module">
-  /* =========================================================
-   IMPORT
-========================================================= */
-
   import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-
   import { createRoot } from 'react-dom/client';
-
   import { Canvas, extend, useFrame } from '@react-three/fiber';
-
   import { useAspect, useTexture } from '@react-three/drei';
-
   import * as THREE from 'three/webgpu';
-
   import { clamp, dot, float, floor, fract, max, mix, oneMinus, sin, step, texture, uniform, uv, vec2, vec3 } from 'three/tsl';
 
   extend(THREE);
@@ -388,10 +297,9 @@
    ASSETS
 ========================================================= */
 
-  const VIDEO_MP4 = 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/6a97d1fc5d6ac0d982b59544_Boss%20Filler.mp4';
-
+  /* 2.7 MB H.264, no audio, faststart (was 11.2 MB: 6a97d1fc5d6ac0d982b59544_Boss%20Filler.mp4) */
+  const VIDEO_MP4 = 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/6acda03c6c75e634ffda5201_Boss-Filler-1080.mp4';
   const VIDEO_WEBM = 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/6a9a2b63eda74ea41f629217_Boss%20Filler.webm';
-
   const TILE_URL = 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/6a44913dce7d87918a95ea64_b..svg';
 
   /* =========================================================
@@ -399,36 +307,31 @@
 ========================================================= */
 
   const WIDTH = 1226;
-
   const HEIGHT = 650;
+  const PLANE_ASPECT = WIDTH / HEIGHT;
 
   /* =========================================================
    SETTINGS
 ========================================================= */
 
   const TILE_DENSITY_DESKTOP = 40;
-
   const TILE_DENSITY_TABLET = 50;
-
   const TILE_DENSITY_MOBILE = 64;
 
   const TILE_SIZE_DESKTOP = 0.78;
-
   const TILE_SIZE_TABLET = 0.66;
-
   const TILE_SIZE_MOBILE = 0.55;
 
   const COLOR_LEVELS = 24;
-
   const REVEAL_STEPS = 64;
-
   const REVEAL_PORTION = 0.58;
-
   const HIDE_START = 0.76;
-
   const HIDE_DURATION = 0.24;
-
   const HIDE_TILE_TO_HIDE_DELAY = 0.22;
+
+  /* Shader constants (must match the TSL below) */
+  const ORDER_DIAGONAL = 0.92;
+  const REVEAL_OVERSHOOT = 1.16;
 
   /* =========================================================
    ENTRY
@@ -438,10 +341,16 @@
 ========================================================= */
 
   const ENTRY_PROGRESS_DESKTOP = 0.055;
-
   const ENTRY_PROGRESS_TABLET = 0.04;
-
   const ENTRY_PROGRESS_MOBILE = 0.04;
+
+  /* Mobile / tablet: on portrait the plane is "cover" cropped,
+     so the top-left of the diagonal is off-screen and the first
+     part of the progress rendered nothing (blank white).
+     Entry now jumps to the first VISIBLE tile + this lead.
+     Higher = more tiles already on screen at the start. */
+  const ENTRY_LEAD_TABLET = 0.035;
+  const ENTRY_LEAD_MOBILE = 0.045;
 
   /* =========================================================
    START OFFSET
@@ -449,12 +358,16 @@
    Reveal starts while the last cards are still leaving:
    once every card is past this fraction of the viewport
    (width on desktop / tablet slide, height on mobile stack).
-   0 = wait until the cards are fully gone, 0.5 = half way.
+   X: lower = earlier.  Y: higher = earlier.
 ========================================================= */
 
-  const START_OFFSET_X = 0.5;
+  const START_OFFSET_X_DESKTOP = 0.5;
+  const START_OFFSET_X_TABLET = 0.35;
+  const START_OFFSET_X_MOBILE = 0.35;
 
-  const START_OFFSET_Y = 0.35;
+  const START_OFFSET_Y_DESKTOP = 0.35;
+  const START_OFFSET_Y_TABLET = 0.55;
+  const START_OFFSET_Y_MOBILE = 0.55;
 
   const READY_FRAME_COUNT = 8;
 
@@ -464,16 +377,18 @@
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+  const isMobile = () => matchMedia('(max-width:767px)').matches;
+
+  const isTablet = () => matchMedia('(min-width:768px) and (max-width:991px)').matches;
+
+  const byBreakpoint = (desktop, tablet, mobile) => (isMobile() ? mobile : isTablet() ? tablet : desktop);
+
   function isMobileKeyboardOpen() {
-    if (!matchMedia('(max-width:767px)').matches) {
-      return false;
-    }
+    if (!isMobile()) return false;
 
     const el = document.activeElement;
 
-    if (!el) {
-      return false;
-    }
+    if (!el) return false;
 
     return el.matches('input') || el.matches('textarea') || el.matches('select') || el.isContentEditable;
   }
@@ -505,29 +420,21 @@
 ========================================================= */
 
   let refreshRAF1 = 0;
-
   let refreshRAF2 = 0;
 
   function safeRefresh() {
-    if (isMobileKeyboardOpen()) {
-      return;
-    }
+    if (isMobileKeyboardOpen()) return;
 
     const ScrollTrigger = window.ScrollTrigger;
 
-    if (!ScrollTrigger) {
-      return;
-    }
+    if (!ScrollTrigger) return;
 
     cancelAnimationFrame(refreshRAF1);
-
     cancelAnimationFrame(refreshRAF2);
 
     refreshRAF1 = requestAnimationFrame(() => {
       refreshRAF2 = requestAnimationFrame(() => {
-        if (isMobileKeyboardOpen()) {
-          return;
-        }
+        if (isMobileKeyboardOpen()) return;
 
         try {
           ScrollTrigger.refresh();
@@ -544,106 +451,67 @@
     const tileMap = useTexture(TILE_URL);
 
     const videoReadyRef = useRef(false);
-
     const renderedFramesRef = useRef(0);
-
     const readySentRef = useRef(false);
 
-    /* =======================================================
-     VIDEO
-  ======================================================= */
+    /* VIDEO */
 
     const video = useMemo(() => {
       const el = document.createElement('video');
 
       el.crossOrigin = 'anonymous';
-
       el.preload = 'auto';
-
       el.muted = true;
-
       el.defaultMuted = true;
-
       el.autoplay = true;
-
       el.loop = true;
-
       el.playsInline = true;
-
       el.disablePictureInPicture = true;
 
       el.setAttribute('muted', '');
-
       el.setAttribute('playsinline', '');
-
       el.setAttribute('webkit-playsinline', '');
 
       return el;
     }, []);
 
-    /* =======================================================
-     VIDEO TEXTURE
-  ======================================================= */
+    /* VIDEO TEXTURE */
 
     const videoMap = useMemo(() => {
       const map = new THREE.VideoTexture(video);
 
       map.colorSpace = THREE.SRGBColorSpace;
-
       map.wrapS = THREE.ClampToEdgeWrapping;
-
       map.wrapT = THREE.ClampToEdgeWrapping;
-
       map.minFilter = THREE.LinearFilter;
-
       map.magFilter = THREE.LinearFilter;
-
       map.generateMipmaps = false;
 
       return map;
     }, [video]);
 
-    /* =======================================================
-     VIDEO SOURCE
-  ======================================================= */
+    /* VIDEO SOURCE */
 
     useEffect(() => {
       let destroyed = false;
-
       let confirmed = false;
-
       let videoFrameID = null;
-
       let sourceIndex = 0;
 
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-      const candidates = isIOS
+      /* Desktop Safari too: it reports WebM as playable, but VP9 into
+         a WebGL texture is unreliable there. H.264 is safe. */
+      const isSafari = /^((?!chrome|chromium|crios|fxios|edg|android).)*safari/i.test(navigator.userAgent);
+
+      const candidates = isIOS || isSafari
         ? [
-            {
-              src: VIDEO_MP4,
-
-              type: 'video/mp4',
-            },
-
-            {
-              src: VIDEO_WEBM,
-
-              type: 'video/webm',
-            },
+            { src: VIDEO_MP4, type: 'video/mp4' },
+            { src: VIDEO_WEBM, type: 'video/webm' },
           ]
         : [
-            {
-              src: VIDEO_WEBM,
-
-              type: 'video/webm',
-            },
-
-            {
-              src: VIDEO_MP4,
-
-              type: 'video/mp4',
-            },
+            { src: VIDEO_WEBM, type: 'video/webm' },
+            { src: VIDEO_MP4, type: 'video/mp4' },
           ];
 
       const playable = candidates.filter((source) => {
@@ -655,9 +523,7 @@
       const sources = playable.length ? playable : candidates;
 
       const tryPlay = () => {
-        if (destroyed) {
-          return;
-        }
+        if (destroyed) return;
 
         try {
           video.play()?.catch?.(() => {});
@@ -665,54 +531,57 @@
       };
 
       const confirmVideo = () => {
-        if (destroyed || confirmed) {
-          return;
-        }
+        if (destroyed || confirmed) return;
 
-        if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) {
-          return;
-        }
+        if (video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
 
         confirmed = true;
-
         videoReadyRef.current = true;
-
         videoMap.needsUpdate = true;
       };
 
-      const waitVideoFrame = () => {
-        if (destroyed || confirmed) {
-          return;
-        }
+      /* Safari may never fire requestVideoFrameCallback for a video
+         that is not in the DOM, so a rAF poll always runs alongside. */
+      let polling = false;
 
-        if ('requestVideoFrameCallback' in video) {
+      const waitVideoFrame = () => {
+        if (destroyed || confirmed) return;
+
+        if ('requestVideoFrameCallback' in video && videoFrameID === null) {
           videoFrameID = video.requestVideoFrameCallback(() => {
+            videoFrameID = null;
             confirmVideo();
           });
-        } else {
-          const check = () => {
-            confirmVideo();
-
-            if (!confirmed && !destroyed) {
-              requestAnimationFrame(check);
-            }
-          };
-
-          requestAnimationFrame(check);
         }
+
+        if (polling) return;
+
+        polling = true;
+
+        const check = () => {
+          confirmVideo();
+
+          if (!confirmed && !destroyed) {
+            requestAnimationFrame(check);
+          } else {
+            polling = false;
+          }
+        };
+
+        requestAnimationFrame(check);
       };
 
+      /* A source that neither plays nor errors (silent stall) moves on
+         to the next format instead of leaving the poster up. */
+      const STALL_MS = 8000;
+      let stallTimer = 0;
+
       const loadSource = (index) => {
-        if (destroyed || !sources[index]) {
-          return;
-        }
+        if (destroyed || !sources[index]) return;
 
         sourceIndex = index;
-
         confirmed = false;
-
         videoReadyRef.current = false;
-
         renderedFramesRef.current = 0;
 
         video.src = sources[index].src;
@@ -722,12 +591,16 @@
         } catch (_) {}
 
         tryPlay();
+
+        clearTimeout(stallTimer);
+
+        stallTimer = setTimeout(() => {
+          if (!destroyed && !confirmed && sourceIndex === index) handleError();
+        }, STALL_MS);
       };
 
       const handleError = () => {
-        if (destroyed) {
-          return;
-        }
+        if (destroyed) return;
 
         if (sourceIndex + 1 < sources.length) {
           loadSource(sourceIndex + 1);
@@ -739,36 +612,25 @@
       };
 
       video.addEventListener('loadeddata', waitVideoFrame);
-
       video.addEventListener('canplay', waitVideoFrame);
-
       video.addEventListener('playing', waitVideoFrame);
-
       video.addEventListener('error', handleError);
 
-      window.addEventListener('touchstart', tryPlay, {
-        passive: true,
-      });
-
-      window.addEventListener('pointerdown', tryPlay, {
-        passive: true,
-      });
+      window.addEventListener('touchstart', tryPlay, { passive: true });
+      window.addEventListener('pointerdown', tryPlay, { passive: true });
 
       loadSource(0);
 
       return () => {
         destroyed = true;
+        clearTimeout(stallTimer);
 
         video.removeEventListener('loadeddata', waitVideoFrame);
-
         video.removeEventListener('canplay', waitVideoFrame);
-
         video.removeEventListener('playing', waitVideoFrame);
-
         video.removeEventListener('error', handleError);
 
         window.removeEventListener('touchstart', tryPlay);
-
         window.removeEventListener('pointerdown', tryPlay);
 
         if (videoFrameID !== null && 'cancelVideoFrameCallback' in video) {
@@ -787,80 +649,47 @@
       };
     }, [video, videoMap, onError]);
 
-    /* =======================================================
-     TILE
-  ======================================================= */
+    /* TILE */
 
     tileMap.colorSpace = THREE.NoColorSpace;
-
     tileMap.wrapS = THREE.ClampToEdgeWrapping;
-
     tileMap.wrapT = THREE.ClampToEdgeWrapping;
-
     tileMap.generateMipmaps = false;
-
     tileMap.minFilter = THREE.LinearFilter;
-
     tileMap.magFilter = THREE.LinearFilter;
 
-    /* =======================================================
-     MATERIAL
-  ======================================================= */
+    /* MATERIAL */
 
     const { material, uniforms } = useMemo(() => {
-      const mobile = matchMedia('(max-width:767px)').matches;
+      const density = byBreakpoint(TILE_DENSITY_DESKTOP, TILE_DENSITY_TABLET, TILE_DENSITY_MOBILE);
 
-      const tablet = matchMedia('(min-width:768px) and (max-width:991px)').matches;
+      const tileSize = byBreakpoint(TILE_SIZE_DESKTOP, TILE_SIZE_TABLET, TILE_SIZE_MOBILE);
 
-      const density = mobile ? TILE_DENSITY_MOBILE : tablet ? TILE_DENSITY_TABLET : TILE_DENSITY_DESKTOP;
-
-      const tileSize = mobile ? TILE_SIZE_MOBILE : tablet ? TILE_SIZE_TABLET : TILE_SIZE_DESKTOP;
-
-      /* ===================================================
-           IMPORTANT
-
-           TRUE zero initial state.
-        =================================================== */
+      /* TRUE zero initial state */
 
       const uReveal = uniform(0);
-
       const uStarted = uniform(0);
-
       const uDensity = uniform(density);
 
       const aspect = float(WIDTH).div(HEIGHT);
 
-      /* ===================================================
-           VIDEO
-        =================================================== */
+      /* VIDEO */
 
       const cleanVideo = texture(videoMap, uv()).rgb;
 
-      /* ===================================================
-           GRID
-        =================================================== */
+      /* GRID */
 
       const correctedUV = vec2(uv().x.mul(aspect), uv().y);
-
       const gridUV = correctedUV.mul(uDensity);
-
       const cellID = floor(gridUV);
-
       const localUV = fract(gridUV);
-
       const pixelCorrected = cellID.add(0.5).div(uDensity);
-
       const pixelUV = vec2(pixelCorrected.x.div(aspect), pixelCorrected.y);
-
       const pixelSample = texture(videoMap, pixelUV).rgb;
-
       const pixelColor = floor(pixelSample.mul(float(COLOR_LEVELS - 1))).div(float(COLOR_LEVELS - 1));
-
       const pixelLuma = pixelColor.r.mul(0.299).add(pixelColor.g.mul(0.587)).add(pixelColor.b.mul(0.114));
 
-      /* ===================================================
-           PIXEL B
-        =================================================== */
+      /* PIXEL B */
 
       const tileUV = localUV.sub(0.5).div(float(tileSize)).add(0.5);
 
@@ -870,106 +699,62 @@
         .mul(oneMinus(step(1, tileUV.y)));
 
       const tileSample = texture(tileMap, tileUV);
-
       const tileLuma = tileSample.r.mul(0.299).add(tileSample.g.mul(0.587)).add(tileSample.b.mul(0.114));
-
       const tileAlpha = step(0.1, tileSample.a);
-
       const bright = step(0.55, tileLuma).mul(tileAlpha);
-
       const dark = oneMinus(step(0.45, tileLuma)).mul(tileAlpha);
-
       const shape = max(bright, dark).mul(inside);
-
       const baseColor = pixelColor.mul(0.58);
-
       const brightness = floor(clamp(pixelLuma.mul(1.45).add(0.14), 0, 1).mul(8)).div(8);
-
       const logoColor = mix(baseColor, vec3(brightness), shape);
 
       /* ===================================================
            ORIGINAL RANDOM + DIAGONAL
-
-           IMPORTANT:
-           DO NOT CHANGE THIS.
-
-           top-left -> bottom-right
+           DO NOT CHANGE. top-left -> bottom-right
         =================================================== */
 
       const random = fract(sin(dot(cellID, vec2(12.9898, 78.233))).mul(43758.5453));
-
       const diagonal = pixelUV.x.mul(0.5).add(oneMinus(pixelUV.y).mul(0.5));
+      const order = diagonal.mul(ORDER_DIAGONAL).add(random.mul(0.08));
 
-      const order = diagonal.mul(0.92).add(random.mul(0.08));
-
-      /* ===================================================
-           REVEAL
-        =================================================== */
+      /* REVEAL */
 
       const revealRaw = clamp(uReveal.div(REVEAL_PORTION), 0, 1);
-
       const steppedReveal = floor(revealRaw.mul(float(REVEAL_STEPS))).div(float(REVEAL_STEPS));
+      const visibleIn = step(order, steppedReveal.mul(REVEAL_OVERSHOOT)).mul(uStarted);
 
-      const visibleIn = step(order, steppedReveal.mul(1.16)).mul(uStarted);
-
-      /* ===================================================
-           PIXEL -> CLEAN
-        =================================================== */
+      /* PIXEL -> CLEAN */
 
       const cleanRaw = clamp(steppedReveal.sub(0.18).div(0.82), 0, 1);
-
       const cleanProgress = floor(cleanRaw.mul(float(REVEAL_STEPS))).div(float(REVEAL_STEPS));
-
       const cleanSwitch = step(order, cleanProgress.mul(1.14));
-
       const transition = mix(logoColor, cleanVideo, cleanSwitch);
 
-      /* ===================================================
-           HIDE
-           SAME DIAGONAL
-        =================================================== */
+      /* HIDE — SAME DIAGONAL */
 
-      const hideOrder = diagonal.mul(0.92).add(random.mul(0.08));
-
+      const hideOrder = diagonal.mul(ORDER_DIAGONAL).add(random.mul(0.08));
       const hideRaw = clamp(uReveal.sub(HIDE_START).div(HIDE_DURATION), 0, 1);
-
       const steppedHide = floor(hideRaw.mul(float(REVEAL_STEPS))).div(float(REVEAL_STEPS));
-
       const hideSwitch = step(hideOrder, steppedHide.mul(1.12));
-
       const hideColor = mix(transition, logoColor, hideSwitch);
-
       const hideVisibilityRaw = clamp(hideRaw.sub(HIDE_TILE_TO_HIDE_DELAY).div(1 - HIDE_TILE_TO_HIDE_DELAY), 0, 1);
-
       const hideVisibility = floor(hideVisibilityRaw.mul(float(REVEAL_STEPS))).div(float(REVEAL_STEPS));
-
       const hideMask = step(hideOrder, hideVisibility.mul(1.12));
-
       const finalVisibility = visibleIn.mul(oneMinus(hideMask));
 
-      /* ===================================================
-           MATERIAL
-        =================================================== */
+      /* MATERIAL */
 
       const material = new THREE.MeshBasicNodeMaterial();
 
       material.colorNode = hideColor;
-
       material.opacityNode = finalVisibility;
-
       material.transparent = true;
-
       material.depthWrite = false;
-
       material.depthTest = false;
 
       return {
         material,
-
-        uniforms: {
-          uReveal,
-          uStarted,
-        },
+        uniforms: { uReveal, uStarted },
       };
     }, [videoMap, tileMap]);
 
@@ -977,87 +762,52 @@
 
     /* =======================================================
      SCROLL
-
-     Reveal starts once every .www-card-item is past the
-     START_OFFSET line. If .track-filler has not reached the top
-     yet, .filler-media is held at top:0 with a transform
-     (visual sticky) until real CSS sticky takes over, so the
-     reveal always runs on a stuck frame and never on a
-     blank screen.
   ======================================================= */
 
     useEffect(() => {
       let destroyed = false;
-
       let cleanup = null;
 
       async function initScroll() {
         try {
           await getScrollTrigger().catch(() => null);
 
-          if (destroyed) {
-            return;
-          }
+          if (destroyed) return;
 
           const container = document.getElementById('webgpu-canvas');
 
-          if (!container) {
-            return;
-          }
+          if (!container) return;
 
           const track = container.closest('.track-filler') || container.closest('.section-fiiler') || container;
-
           const media = container.closest('.filler-media') || container;
-
           const cardsSection = document.querySelector('.who-we-work-section');
-
           const cards = Array.from(document.querySelectorAll('.who-we-work-section .www-card-item'));
 
-          /* =================================================
-             GEOMETRY (document coordinates)
-
-             Measured every frame: late images / fonts can
-             shift the layout after init.
-          ================================================= */
+          /* GEOMETRY (document coordinates), measured every frame */
 
           const measure = (scrollY) => {
             const viewport = window.innerHeight;
-
             const top = track.getBoundingClientRect().top + scrollY;
-
-            /* Scroll range while .filler-media stays stuck */
             const stickyDistance = Math.max(0, track.offsetHeight - (media.offsetHeight || viewport));
-
             const span = Math.max(viewport * 0.5, stickyDistance * 0.88);
 
-            return {
-              top,
-
-              /* Designed reveal -> hide length */
-              span,
-
-              /* Hide must still finish here (original end) */
-              end: top + span,
-            };
+            return { top, span, end: top + span };
           };
 
-          /* Cards count as leaving once all of them are past the
-             START_OFFSET line: towards the right edge (desktop
-             horizontal slide) or the top (tablet / mobile stack).
-             Cards still below or left have not played yet. */
+          /* Cards leaving: all past the START_OFFSET line */
+
           const cardsGone = () => {
             if (!cards.length || !cardsSection) {
               return track.getBoundingClientRect().top <= 0;
             }
 
-            /* Not reached the cards section yet */
             if (cardsSection.getBoundingClientRect().top > 0) {
               return false;
             }
 
-            const lineX = window.innerWidth * START_OFFSET_X;
+            const lineX = window.innerWidth * byBreakpoint(START_OFFSET_X_DESKTOP, START_OFFSET_X_TABLET, START_OFFSET_X_MOBILE);
 
-            const lineY = window.innerHeight * START_OFFSET_Y;
+            const lineY = window.innerHeight * byBreakpoint(START_OFFSET_Y_DESKTOP, START_OFFSET_Y_TABLET, START_OFFSET_Y_MOBILE);
 
             return cards.every((card) => {
               const r = card.getBoundingClientRect();
@@ -1067,133 +817,132 @@
           };
 
           /* =================================================
-             PROGRESS
+             VISIBLE ENTRY (responsive)
 
-             Direction shader NEVER changes.
-             We only shift the entry progress.
+             useAspect = cover. On portrait only a narrow middle
+             strip of the plane is on screen, so the diagonal's
+             first visible tile needs uReveal > 0. Compute that
+             value so the reveal starts ON screen immediately.
           ================================================= */
+
+          const visibleEntry = () => {
+            const cw = container.clientWidth || window.innerWidth;
+            const ch = container.clientHeight || window.innerHeight;
+            const canvasAspect = cw / Math.max(1, ch);
+
+            const fracX = Math.min(1, canvasAspect / PLANE_ASPECT);
+            const fracY = Math.min(1, PLANE_ASPECT / canvasAspect);
+
+            const minX = 0.5 - fracX * 0.5;
+            const maxY = 0.5 + fracY * 0.5;
+
+            const firstOrder = (minX * 0.5 + (1 - maxY) * 0.5) * ORDER_DIAGONAL;
+
+            return (firstOrder / REVEAL_OVERSHOOT) * REVEAL_PORTION;
+          };
+
+          /* PROGRESS — shader direction NEVER changes */
 
           const setReveal = (progress) => {
             const realProgress = Math.min(1, Math.max(0, progress));
 
-            const mobile = matchMedia('(max-width:767px)').matches;
+            let entryProgress = byBreakpoint(ENTRY_PROGRESS_DESKTOP, ENTRY_PROGRESS_TABLET, ENTRY_PROGRESS_MOBILE);
 
-            const tablet = matchMedia('(min-width:768px) and (max-width:991px)').matches;
+            if (isMobile() || isTablet()) {
+              const lead = isMobile() ? ENTRY_LEAD_MOBILE : ENTRY_LEAD_TABLET;
 
-            const entryProgress = mobile ? ENTRY_PROGRESS_MOBILE : tablet ? ENTRY_PROGRESS_TABLET : ENTRY_PROGRESS_DESKTOP;
+              entryProgress = Math.max(entryProgress, visibleEntry() + lead);
+            }
 
             uniforms.uStarted.value = 1;
-
             uniforms.uReveal.value = Math.min(1, entryProgress + realProgress * (1 - entryProgress));
           };
 
-          /* Reveal and hide keep the designed pace (span). When
-             the run from the start point to the original end is
-             longer than span, the extra distance holds the clean
-             video between REVEAL_PORTION and HIDE_START, so the
-             hide still lands at the original end. */
+          /* =================================================
+             PHASE (panjang scroll relatif)
+
+             Mask in dan mask out dibuat sama cepat.
+             OUT sedikit lebih besar karena 22% awal hide
+             dipakai ganti video -> pixel B dulu.
+             HOLD = video bersih diam.
+          ================================================= */
+
+          const PHASE_IN = 1;
+
+          const PHASE_HOLD = 0.1;
+
+          const PHASE_OUT = 1.2;
+
           const mapProgress = (distance, span, total) => {
-            span = Math.max(1, span);
+            const length = Math.max(1, total);
 
-            if (total <= span) {
-              return distance / Math.max(1, total);
-            }
+            const unit = length / (PHASE_IN + PHASE_HOLD + PHASE_OUT);
 
-            const revealEnd = span * REVEAL_PORTION;
+            const inEnd = unit * PHASE_IN;
 
-            const holdEnd = revealEnd + span * (HIDE_START - REVEAL_PORTION) + (total - span);
+            const holdEnd = inEnd + unit * PHASE_HOLD;
 
-            if (distance <= revealEnd) {
-              return distance / span;
+            if (distance <= inEnd) {
+              return (distance / inEnd) * REVEAL_PORTION;
             }
 
             if (distance <= holdEnd) {
-              return REVEAL_PORTION + ((distance - revealEnd) / (holdEnd - revealEnd)) * (HIDE_START - REVEAL_PORTION);
+              return REVEAL_PORTION + ((distance - inEnd) / (unit * PHASE_HOLD)) * (HIDE_START - REVEAL_PORTION);
             }
 
-            return HIDE_START + (distance - holdEnd) / span;
+            return HIDE_START + ((distance - holdEnd) / (unit * PHASE_OUT)) * (1 - HIDE_START);
           };
 
           const resetReveal = () => {
             uniforms.uStarted.value = 0;
-
             uniforms.uReveal.value = 0;
           };
 
-          /* =================================================
-             HOLD .filler-media AT TOP UNTIL CSS STICKY
-          ================================================= */
+          /* HOLD .filler-media AT TOP UNTIL CSS STICKY */
 
           let holding = false;
 
           const setHold = (offset) => {
             if (offset < -0.5) {
               media.style.setProperty('transform', `translate3d(0, ${offset}px, 0)`);
-
               holding = true;
             } else if (holding) {
               media.style.removeProperty('transform');
-
               holding = false;
             }
           };
 
-          /* =================================================
-             TICK
+          /* TICK — every frame (IX2 smoothing keeps moving cards) */
 
-             Runs every frame (not only on scroll): IX2 card
-             smoothing keeps moving the cards after the wheel
-             stops.
-          ================================================= */
-
-          /* Exit point, relative to the track top, so late layout
-             shifts (images, iOS toolbar) move it with the track.
-             On mobile .section-fiiler overlaps the cards track, so
-             the track top passes long before the cards leave:
-             starting from the track top made the reveal jump to
-             the middle. */
           let startOffset = null;
-
-          /* Cards were seen on screen in this visit */
           let armed = false;
-
           let raf = 0;
 
           const tick = () => {
             raf = requestAnimationFrame(tick);
 
-            if (destroyed || document.hidden) {
-              return;
-            }
+            if (destroyed || document.hidden) return;
 
             const scrollY = window.scrollY;
-
             const geo = measure(scrollY);
-
             const gone = cardsGone();
 
             if (!gone) {
               armed = true;
-
               setHold(0);
-
               resetReveal();
 
               return;
             }
 
-            /* Record where the cards left. Loaded deep in the
-               page: fall back to the natural sticky point. */
             if (startOffset === null) {
               startOffset = armed ? scrollY - geo.top : Math.min(0, scrollY - geo.top);
             }
 
             const startY = geo.top + startOffset;
 
-            /* Above the recorded exit point: stay blank */
             if (scrollY < startY) {
               setHold(0);
-
               resetReveal();
 
               return;
@@ -1204,26 +953,15 @@
             setReveal(mapProgress(scrollY - startY, geo.span, geo.end - startY));
           };
 
-          /* =================================================
-             START LOOP
-          ================================================= */
-
           tick();
 
-          /* =================================================
-             RESIZE / REFRESH
-          ================================================= */
+          /* RESIZE / REFRESH — only width change re-reads exit point */
 
           let resizeTimer = 0;
-
           let lastWidth = window.innerWidth;
 
-          /* Only a width change (rotation, window resize) re-reads
-             the exit point; the iOS toolbar only changes height. */
           const refresh = () => {
-            if (destroyed || isMobileKeyboardOpen()) {
-              return;
-            }
+            if (destroyed || isMobileKeyboardOpen()) return;
 
             clearTimeout(resizeTimer);
 
@@ -1232,9 +970,7 @@
 
               if (window.innerWidth !== lastWidth) {
                 lastWidth = window.innerWidth;
-
                 startOffset = null;
-
                 armed = false;
               }
             }, 120);
@@ -1244,29 +980,18 @@
 
           if ('ResizeObserver' in window) {
             observer = new ResizeObserver(refresh);
-
             observer.observe(track);
           }
 
-          window.addEventListener('resize', refresh, {
-            passive: true,
-          });
-
-          window.addEventListener('orientationchange', refresh, {
-            passive: true,
-          });
+          window.addEventListener('resize', refresh, { passive: true });
+          window.addEventListener('orientationchange', refresh, { passive: true });
 
           cleanup = () => {
             clearTimeout(resizeTimer);
-
             cancelAnimationFrame(raf);
-
             observer?.disconnect();
-
             window.removeEventListener('resize', refresh);
-
             window.removeEventListener('orientationchange', refresh);
-
             setHold(0);
           };
         } catch (error) {
@@ -1278,19 +1003,14 @@
 
       return () => {
         destroyed = true;
-
         cleanup?.();
       };
     }, [uniforms.uReveal, uniforms.uStarted]);
 
-    /* =======================================================
-     READY
-  ======================================================= */
+    /* READY */
 
     useFrame(() => {
-      if (readySentRef.current) {
-        return;
-      }
+      if (readySentRef.current) return;
 
       if (!videoReadyRef.current) {
         renderedFramesRef.current = 0;
@@ -1300,9 +1020,7 @@
 
       renderedFramesRef.current++;
 
-      if (renderedFramesRef.current < READY_FRAME_COUNT) {
-        return;
-      }
+      if (renderedFramesRef.current < READY_FRAME_COUNT) return;
 
       readySentRef.current = true;
 
@@ -1315,18 +1033,8 @@
 
     return React.createElement(
       'mesh',
-
-      {
-        scale: [w, h, 1],
-
-        material,
-
-        frustumCulled: false,
-      },
-
-      React.createElement('planeGeometry', {
-        args: [1, 1],
-      }),
+      { scale: [w, h, 1], material, frustumCulled: false },
+      React.createElement('planeGeometry', { args: [1, 1] }),
     );
   }
 
@@ -1337,16 +1045,11 @@
   class BossBoundary extends React.Component {
     constructor(props) {
       super(props);
-
-      this.state = {
-        failed: false,
-      };
+      this.state = { failed: false };
     }
 
     static getDerivedStateFromError() {
-      return {
-        failed: true,
-      };
+      return { failed: true };
     }
 
     componentDidCatch(error) {
@@ -1364,23 +1067,18 @@
 
   function App({ onReady, onError }) {
     const [ready, setReady] = useState(false);
-
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
       const target = document.getElementById('webgpu-canvas');
 
-      if (!target || !('IntersectionObserver' in window)) {
-        return;
-      }
+      if (!target || !('IntersectionObserver' in window)) return;
 
       const observer = new IntersectionObserver(
         ([entry]) => {
           setVisible(entry.isIntersecting);
         },
-        {
-          rootMargin: '350px 0px',
-        },
+        { rootMargin: '350px 0px' },
       );
 
       observer.observe(target);
@@ -1390,84 +1088,46 @@
 
     const actualReady = () => {
       setReady(true);
-
       onReady?.();
     };
 
-    const dpr = matchMedia('(max-width:767px)').matches ? 1 : 1.25;
+    const dpr = isMobile() ? 1 : 1.25;
 
     return React.createElement(
       BossBoundary,
-
-      {
-        onError,
-      },
-
+      { onError },
       React.createElement(
         Canvas,
-
         {
-          style: {
-            width: '100%',
-
-            height: '100%',
-
-            background: 'transparent',
-          },
-
+          style: { width: '100%', height: '100%', background: 'transparent' },
           dpr: [1, dpr],
-
           frameloop: ready && !visible ? 'never' : 'always',
-
-          camera: {
-            position: [0, 0, 5],
-
-            fov: 50,
-          },
-
+          camera: { position: [0, 0, 5], fov: 50 },
           gl: async (props) => {
             try {
               const renderer = new THREE.WebGPURenderer({
                 ...props,
-
                 antialias: false,
-
                 alpha: true,
-
                 forceWebGL: true,
               });
 
               await renderer.init();
 
               renderer.setClearColor(0x000000, 0);
-
               renderer.setClearAlpha(0);
 
               return renderer;
             } catch (error) {
               onError?.(error);
-
               throw error;
             }
           },
         },
-
         React.createElement(
           Suspense,
-
-          {
-            fallback: null,
-          },
-
-          React.createElement(
-            Scene,
-
-            {
-              onReady: actualReady,
-
-              onError,
-            },
-          ),
+          { fallback: null },
+          React.createElement(Scene, { onReady: actualReady, onError }),
         ),
       ),
     );
@@ -1484,13 +1144,10 @@
 ========================================================= */
 
   let booting = false;
-
   let booted = false;
 
   function bootBossMedia() {
-    if (booting || booted) {
-      return;
-    }
+    if (booting || booted) return;
 
     const rootElement = document.getElementById('webgpu-canvas');
 
@@ -1516,7 +1173,6 @@
 
     try {
       root = createRoot(rootElement);
-
       rootElement.__bossReactRoot = root;
     } catch (error) {
       booting = false;
@@ -1527,22 +1183,16 @@
     let confirmed = false;
 
     const handleReady = () => {
-      if (confirmed) {
-        return;
-      }
+      if (confirmed) return;
 
       confirmed = true;
-
       booting = false;
-
       booted = true;
 
       window.BOSS_MEDIA_CONFIRM_READY?.();
 
       safeRefresh();
-
       setTimeout(safeRefresh, 250);
-
       setTimeout(safeRefresh, 900);
     };
 
@@ -1551,17 +1201,7 @@
     };
 
     try {
-      root.render(
-        React.createElement(
-          App,
-
-          {
-            onReady: handleReady,
-
-            onError: handleError,
-          },
-        ),
-      );
+      root.render(React.createElement(App, { onReady: handleReady, onError: handleError }));
     } catch (error) {
       handleError(error);
     }
@@ -1574,25 +1214,20 @@
   let bootScheduled = false;
 
   function scheduleBoot() {
-    if (bootScheduled) {
-      return;
-    }
+    if (bootScheduled) return;
 
     bootScheduled = true;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         bootScheduled = false;
-
         bootBossMedia();
       });
     });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scheduleBoot, {
-      once: true,
-    });
+    document.addEventListener('DOMContentLoaded', scheduleBoot, { once: true });
   } else {
     scheduleBoot();
   }
@@ -1601,7 +1236,6 @@
 
   window.Webflow.push(() => {
     scheduleBoot();
-
     safeRefresh();
   });
 
@@ -1609,12 +1243,9 @@
     'load',
     () => {
       scheduleBoot();
-
       safeRefresh();
     },
-    {
-      once: true,
-    },
+    { once: true },
   );
 
   window.addEventListener('pageshow', (event) => {

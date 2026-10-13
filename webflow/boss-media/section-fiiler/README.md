@@ -44,3 +44,18 @@ Changes:
 - A resize only re-reads the start point when the width changes. The iOS toolbar changes only the height and used to reset it.
 
 Desktop is unchanged: there the cards leave before the track top, which gives the same start point as before.
+
+### 5. Safari: filler video not loading (2026-10-13)
+The patch was applied on top of the owner's live version, which had been edited in Webflow since the last repo copy. That version is kept as `code-embed-11.live-2026-10-13.html`; `code-embed-11.html` is now live plus the patch below.
+
+Likely causes, found by reading the code. Safari could not be tested here because this container has no WebKit.
+1. **WebM first on desktop Safari.** MP4 came first only for iOS, so desktop Safari loaded the WebM (VP9). VP9 into a WebGL texture is unreliable in Safari and can fail without an `error` event.
+2. **Readiness waited only on `requestVideoFrameCallback`.** The video element is never added to the DOM, and Safari may not fire that callback for it. The video then never counted as ready and the poster stayed up.
+3. **No stall timeout.** A source that neither played nor errored was never replaced.
+4. **The MP4 was 11.2 MB** (11 Mbps, plus an unused AAC audio track).
+
+Fixes:
+- **Format order:** desktop Safari now gets MP4 first, same as iOS (`isSafari` UA check).
+- **Readiness:** a requestAnimationFrame poll (`readyState >= 2` and real video size) now always runs alongside `requestVideoFrameCallback`.
+- **Stall timeout:** after 8 s without a confirmed frame, the next format is tried.
+- **New MP4:** asset `6acda03c6c75e634ffda5201_Boss-Filler-1080.mp4`, 2.7 MB, H.264 Main, 1080p30, no audio, faststart, SSIM 0.9956 against the original. CORS `*` was checked. The old asset is kept.
