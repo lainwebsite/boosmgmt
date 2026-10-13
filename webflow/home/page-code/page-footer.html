@@ -1,0 +1,954 @@
+<!-- THREE.js Core & Add-ons -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+
+<!-- GSAP Core & ScrollTrigger (Only one version needed) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Flip.min.js"></script>
+
+<!-- Lenis (Smooth Scroll) -->
+<script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.23/bundled/lenis.min.js"></script>
+
+<!-- Split-Type -->
+<script src="https://unpkg.com/split-type"></script>
+
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+
+<!-- Globe API -->
+<!-- script src="https://cdn.jsdelivr.net/npm/globe.gl"></script -->
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.44.0/dist/globe.gl.min.js"></script>
+
+<!-- Text Animation -->
+<script src="https://unpkg.com/split-type"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.3/TextPlugin.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+<script src="https://unpkg.com/gsap@3/dist/ScrollToPlugin.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+  $(document).ready(function () {
+    const swiper = new Swiper('.swiper', {
+      allowTouchMove: false,
+      direction: 'horizontal',
+      loop: true,
+      allowTouchMove: true, // ✅ enable dragging / swiping
+      grabCursor: true,
+      slidesPerView: 1,
+      breakpoints: {
+        991: {
+          slidesPerView: 3,
+          spaceBetween: 20,
+        },
+        768: {
+          slidesPerView: 1,
+        },
+        479: {
+          slidesPerView: 1,
+        },
+      },
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+    });
+  });
+</script>
+
+
+
+
+<style>
+  .line strong {
+    color: black;
+  }
+  .line {
+    color: transparent;
+    --line-width: 100%;
+    position: relative;
+    background-color: #393939;
+    background-image: linear-gradient(
+      90deg,
+      hsla(0, 0%, 100%, 1),
+      hsla(0, 0%, 100%, 1) var(--line-width),
+      hsla(0, 0%, 100%, 0) var(--line-width)
+    );
+    background-clip: text;
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.8.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.8.0/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/timothydesign/script/split-type.js"></script>
+<script>
+  let typeSplit;
+  // Split the text up
+  function runSplit() {
+    typeSplit = new SplitType(
+      ".split-lines",
+      {
+        types: "lines, words",
+      }
+    );
+    createAnimation();
+  }
+  runSplit();
+  // Update on window resize
+  let windowWidth = $(window).innerWidth();
+  window.addEventListener("resize", function () {
+    if (windowWidth !== $(window).innerWidth()) {
+      windowWidth = $(window).innerWidth();
+      typeSplit.revert();
+      runSplit();
+    }
+  });
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  function createAnimation() {
+    $(".line").each(function (index) {
+      let tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: $(this),
+          start: "bottom 100%",
+          end: "bottom center",
+          scrub: 1,
+        },
+      });
+      tl.from($(this), {
+        "--line-width": "0%",
+        duration: 1,
+      });
+    });
+  }
+</script>
+
+
+
+<!-- LINK HOVER -->
+<!-- BUTTON -->
+<script src="https://unpkg.com/split-type"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  let splitType = new SplitType("[hoverstagger='text']", {
+    types: "words,chars",
+    tagName: "span"
+  });
+
+  $("[hoverstagger='link']").each(function (index) {
+    let text1 = $(this).find("[hoverstagger='text']").eq(0);
+    let text2 = $(this).find("[hoverstagger='text']").eq(1);
+
+    let tl = gsap.timeline({ paused: true });
+    tl.to(text1.find(".char"), { yPercent: -100, duration: 0.3, stagger: { amount: 0.2 } });
+    tl.from(text2.find(".char"), { yPercent: 100, duration: 0.3, stagger: { amount: 0.2 } }, 0);
+
+    $(this).on("mouseenter", function () {
+      tl.restart();
+    });
+    $(this).on("mouseleave", function () {
+      tl.reverse();
+    });
+  });
+});
+</script>
+
+
+
+
+
+
+<script>
+  function initCarousel() {
+    const items = document.querySelectorAll(".hp_country_item");
+    const total = items.length;
+    const radius = 90;
+
+    // Arrange items in a vertical circle
+    items.forEach((item, i) => {
+      const angle = (360 / total) * i;
+      gsap.set(item, {
+        rotationX: angle,
+        z: radius,
+      });
+    });
+
+    // Animate the container rotation
+    gsap.to(".hp_country_content", {
+      rotateX: "+=360",
+      duration: 20,
+      ease: "none",
+      repeat: -1,
+      onUpdate: updateVisibility
+    });
+
+    function updateVisibility() {
+      const content = document.querySelector(".hp_country_content");
+      const currentRotation = gsap.getProperty(content, "rotationX") % 360;
+
+      items.forEach((item, i) => {
+        const angle = (360 / total) * i + currentRotation;
+        const normalizedAngle = ((angle + 360) % 360); // 0–360
+
+        // Show only if in front half (between -90 to 90 degrees)
+        if (normalizedAngle > 90 && normalizedAngle < 270) {
+          item.style.opacity = 0;
+        } else {
+          item.style.opacity = 1;
+        }
+      });
+    }
+  }
+
+  // Run animation only if screen width >= 900px
+  if (window.matchMedia("(min-width: 900px)").matches) {
+    initCarousel();
+  }
+</script>
+
+
+<script>
+window.addEventListener("DOMContentLoaded", (event) => {
+  // Split text into spans
+  let typeSplit = new SplitType("[text-split]", {
+    types: "words, chars",
+    tagName: "span"
+  });
+
+
+  // Generic function to create ScrollTriggers for each animation
+  function createScrollTrigger(triggerElement, timeline) {
+    ScrollTrigger.create({
+      trigger: triggerElement,
+      start: "top 175%",
+      onLeaveBack: () => {
+        timeline.progress(0);
+        timeline.pause();
+      }
+    });
+    ScrollTrigger.create({
+      trigger: triggerElement,
+      start: "top 95%",
+      onEnter: () => timeline.play()
+    });
+  }
+
+  // Text tracking in
+  $("[text-tracking-in]").each(function () {
+    let tl = gsap.timeline({ paused: true });
+    tl.from($(this).find(".word"), {
+      opacity: 0,
+      filter: "blur(30px)",
+      duration: 1,
+      ease: "power3.out",
+      stagger: 0.1
+    });
+    createScrollTrigger($(this), tl);
+  });
+  
+  // Text tracking in
+  $("[text-tracking-in-par]").each(function () {
+    let tl = gsap.timeline({ paused: true });
+    tl.from($(this).find(".word"), {
+      opacity: 0,
+      filter: "blur(30px)",
+      duration: 0.3,
+      ease: "power3.out",
+      stagger: 0.03
+    });
+    createScrollTrigger($(this), tl);
+  });
+
+ 
+
+  // Set initial state
+  gsap.set("[text-split]", { opacity: 1 });
+});
+</script>
+
+
+
+<!-- GLOBE 3D -->
+<script>
+  if (window.matchMedia("(min-width: 990px)").matches) {
+    const ARC_REL_LEN = 0.4;
+    const FLIGHT_TIME = 1000;
+    const NUM_RINGS = 3;
+    const RINGS_MAX_R = 5;
+    const RING_PROPAGATION_SPEED = 5;
+
+    fetch('https://asyerprd.github.io/web-assets/ne_110m_populated_places_simple.geojson')
+      .then(res => res.json())
+      .then(places => {
+        const globe = new Globe(document.getElementById('globeViz'))
+          .globeImageUrl('https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/682ae8a1225080a75e094721_earth_texture.avif')
+          .arcColor(() => 'white')
+          .backgroundColor('rgb(0,0,0,0)')
+          .arcDashLength(ARC_REL_LEN)
+          .arcDashGap(1)
+          .arcStroke(0.3)
+          .arcColor(() => () => 'rgba(255, 255, 255, 0.5)')
+          .arcDashInitialGap(1)
+          .arcDashAnimateTime(FLIGHT_TIME)
+          .arcsTransitionDuration(0)
+          .ringColor(() => t => `rgba(255,255,255,${1-t})`)
+          .ringMaxRadius(RINGS_MAX_R)
+          .ringPropagationSpeed(RING_PROPAGATION_SPEED)
+          .ringRepeatPeriod(FLIGHT_TIME * ARC_REL_LEN / NUM_RINGS)
+          .htmlElementsData(places.features)
+          .htmlElement(d => {
+            const container = document.createElement('div');
+            container.className = 'globe_label_points';
+
+            const dotsWrapper = document.createElement('div');
+            dotsWrapper.className = 'globe_points_dots_wrapper';
+
+            const dot = document.createElement('div');
+            dot.className = 'globe_points_dots';
+
+            const dotBlur = document.createElement('div');
+            dotBlur.className = 'globe_points_dots_blur';
+
+            dotsWrapper.appendChild(dot);
+            dotsWrapper.appendChild(dotBlur);
+
+            const arrow = document.createElement('img');
+            arrow.src = 'https://cdn.prod.website-files.com/67f610e9614020f62021d2f4/682ade10d443a8e41cd15e31_Arrow.svg';
+            arrow.loading = 'lazy';
+            arrow.alt = '';
+            arrow.className = 'globe_line';
+
+            const label = document.createElement('p');
+            label.className = 'text_label';
+            label.textContent = d.properties.name;
+
+            container.appendChild(dotsWrapper);
+            container.appendChild(arrow);
+            container.appendChild(label);
+            container.dataset.lat = d.properties.latitude;
+            container.dataset.lng = d.properties.longitude;
+
+            return container;
+          })
+          .htmlLat(d => d.properties.latitude)
+          .htmlLng(d => d.properties.longitude)
+          .htmlAltitude(0.01)
+          .htmlTransitionDuration(750)
+          .htmlElementVisibilityModifier((container, isVisible) => {
+            if (!isVisible) {
+              container.style.opacity = 0;
+              return;
+            }
+
+            const lat = parseFloat(container.dataset.lat || 0);
+            const lng = parseFloat(container.dataset.lng || 0);
+
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (180 - lng) * (Math.PI / 180);
+
+            const x = Math.sin(phi) * Math.cos(theta);
+            const y = Math.cos(phi);
+            const z = Math.sin(phi) * Math.sin(theta);
+
+            const labelVector = new THREE.Vector3(x, y, z);
+            const cameraVector = globe.camera().getWorldDirection(new THREE.Vector3()).normalize();
+
+            const dot = labelVector.dot(cameraVector);
+
+            container.style.opacity = (dot > -0.5 && dot < 0.3) ? 1 : 0;
+          });
+
+        globe.controls().enableZoom = false;
+        globe.controls().autoRotate = false;
+
+        let prevCoords = { lat: 0, lng: 0 };
+        globe.camera().position.z = 275;
+
+        function emitArc({ lat: endLat, lng: endLng }) {
+          const { lat: startLat, lng: startLng } = prevCoords;
+          prevCoords = { lat: endLat, lng: endLng };
+
+          const arc = { startLat, startLng, endLat, endLng };
+          globe.arcsData([...globe.arcsData(), arc]);
+          setTimeout(() => globe.arcsData(globe.arcsData().filter(d => d !== arc)), FLIGHT_TIME * 10);
+
+          const srcRing = { lat: startLat, lng: startLng };
+          globe.ringsData([...globe.ringsData(), srcRing]);
+          setTimeout(() => globe.ringsData(globe.ringsData().filter(r => r !== srcRing)), FLIGHT_TIME * ARC_REL_LEN);
+
+          setTimeout(() => {
+            const targetRing = { lat: endLat, lng: endLng };
+            globe.ringsData([...globe.ringsData(), targetRing]);
+            setTimeout(() => globe.ringsData(globe.ringsData().filter(r => r !== targetRing)), FLIGHT_TIME * ARC_REL_LEN);
+          }, FLIGHT_TIME);
+        }
+
+        function emitArcRandom() {
+          const endLat = Math.random() * 180 - 90;
+          const endLng = Math.random() * 360 - 180;
+          emitArc({ lat: endLat, lng: endLng });
+        }
+
+        let intervalId;
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        ScrollTrigger.create({
+          trigger: '#globeViz',
+          start: 'top 80%',
+          end: 'bottom top',
+          onEnter: () => {
+            globe.controls().autoRotate = true;
+            if (!intervalId) {
+              emitArcRandom();
+              intervalId = setInterval(emitArcRandom, 1500);
+            }
+          },
+          onLeave: () => {
+            clearInterval(intervalId);
+            intervalId = null;
+          },
+          onEnterBack: () => {
+            globe.controls().autoRotate = true;
+            if (!intervalId) {
+              emitArcRandom();
+              intervalId = setInterval(emitArcRandom, 1500);
+            }
+          },
+          onLeaveBack: () => {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        });
+      });
+  }
+</script>
+
+
+<!-- 3D ON HERO -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // === THREE JS BASE ===
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.z = 10;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById("first_page_wrapper").appendChild(renderer.domElement);
+
+    // === Lighting ===
+    const ambientLight = new THREE.AmbientLight(0xFBFBF7, 0.9);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xFBFBF7, 0.5);
+    directionalLight.position.set(-10, 0, 10);
+    scene.add(directionalLight);
+
+    const backLight = new THREE.DirectionalLight(0xFBFBF7, 0.4);
+    backLight.position.set(20, 0, -5);
+    scene.add(backLight);
+
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    directionalLight.castShadow = true;
+    backLight.castShadow = false;
+    directionalLight.shadow.bias = -0.0005;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+
+    const letterMeshes = {};
+    let lettersGroup = new THREE.Group(); // Parent Group for 'b' and '.'
+    scene.add(lettersGroup);
+
+    const loader = new THREE.FontLoader();
+    loader.load('https://asyerprd.github.io/web-assets/Tiposka_Regular.json', font => {
+      const material = new THREE.MeshPhysicalMaterial({
+        color: 0xf6f6f6,
+        metalness: 0.2,
+        roughness: 0.1,
+        thickness: 1.5,
+        clearcoat: 1,
+        clearcoatRoughness: 0.01
+      });
+
+      const letters = [
+        { char: 'b', name: 'B' },
+        { char: '.', name: '.' },
+      ];
+
+      letters.forEach((data) => {
+        const geo = new THREE.TextGeometry(data.char, {
+          font: font,
+          size: 8,
+          height: 0.3,
+          bevelEnabled: true,
+          bevelThickness: 0.2,
+          bevelSize: 0.01,
+          bevelSegments: 1
+        });
+        geo.computeBoundingBox();
+        geo.center();
+
+        const mesh = new THREE.Mesh(geo, material);
+        mesh.name = data.name;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        letterMeshes[data.name] = mesh;
+        lettersGroup.add(mesh); // Add mesh to the group
+      });
+
+      resetToInitialPositions();
+      setupScrollAnimations();
+    });
+
+    function resetToInitialPositions() {
+      // Position relative inside the group
+      letterMeshes["B"].position.set(0, 0, 0);           // "b" at the group's origin
+      letterMeshes["."].position.set(4.5, -3, 0);         // "." offset from "b"
+      // Scale for mobile
+      if (window.innerWidth <= 767) {
+          lettersGroup.scale.set(0.55, 0.55, 0.55); // smaller on mobile
+      } else {
+          lettersGroup.scale.set(1, 1, 1);       // normal size
+      }
+
+          lettersGroup.position.set(0, 0, 0);
+      }
+
+    function setupScrollAnimations() {
+      gsap.registerPlugin(ScrollTrigger);
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: document.querySelector('.first_page_wrapper'),
+          start: "center center",
+          end: "bottom bottom",
+          scrub: true,
+          onLeaveBack: () => {
+            isAutoRotating = true;
+          },
+        }
+      });
+    }
+
+    // === Rotation control ===
+    let isAutoRotating = true;
+    let autoRotateSpeed = 0.01;
+    let lastScrollTop = 0;
+
+    window.addEventListener("scroll", () => {
+      const st = window.pageYOffset || document.documentElement.scrollTop;
+
+      if (st > lastScrollTop) {
+        autoRotateSpeed = 0.01;
+      } else {
+        autoRotateSpeed = 0.01;
+      }
+
+      clearTimeout(window.scrollTimeout);
+      window.scrollTimeout = setTimeout(() => {
+        autoRotateSpeed = 0.01;
+      }, 500);
+
+      lastScrollTop = st <= 0 ? 0 : st;
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (isAutoRotating) {
+        lettersGroup.rotation.y += autoRotateSpeed; // Rotate the entire group
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      
+      // Re-apply scaling on resize
+      resetToInitialPositions();
+    });
+  });
+</script>
+
+
+
+<!-- SMOOTH SCROLL -->
+<script>
+let lenis = new Lenis({
+  lerp: 0.2,
+  wheelMultiplier: 0.5,
+  gestureOrientation: "vertical",
+  normalizeWheel: false,
+  smoothTouch: false,
+});
+function raf(time) {
+  lenis.raf(time);
+  requestAnimationFrame(raf);
+}
+requestAnimationFrame(raf);
+$("[data-lenis-start]").on("click", function () {
+  lenis.start();
+});
+$("[data-lenis-stop]").on("click", function () {
+  lenis.stop();
+});
+$("[data-lenis-toggle]").on("click", function () {
+  $(this).toggleClass("stop-scroll");
+  if ($(this).hasClass("stop-scroll")) {
+    lenis.stop();
+  } else {
+    lenis.start();
+  }
+});
+</script>
+
+
+<!-- BORDER RADIUS ANIMATION GRADIENT -->
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+if (window.matchMedia("(min-width: 990px)").matches) {
+  gsap.to(".hp_filler_2_gradient", {
+    borderRadius: "0%", // You can change to whatever final border-radius you want
+    duration: 7, 
+    scrollTrigger: {
+      trigger: ".hp_filler_2_gradient",
+      start: "bottom 200%",       
+      end: "bottom -80%",        
+      scrub: true,                  
+    }
+  });
+}
+</script>
+
+
+<!-- HERO IMAGE FLYING ANIMATION -->
+<script>
+/* If a card video cannot be used (fails to load, or its host sends no
+   CORS header so WebGL cannot read it), show the division image. */
+const SERVICE_FALLBACKS = {
+  'ls-1': { url: 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/68b6b00d7e37dbe35bc01c75_boss_liaison-p-800.avif', x: 0.5 },
+  'ls-2': { url: 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/693bb9d72e5af459ea25bee4_TALENT%20IMG%20Large.avif', x: 0.5 },
+  'ls-3': { url: 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/693bbd425719d1302d8fc951_DIGITAL.avif', x: 0.65 },
+  'ls-4': { url: 'https://s3.amazonaws.com/webflow-prod-assets/67f610e9614020f62021d2f4/68ccc9ae94f44706105a97d7_MEDIA%20UPDATE%2018%20SEP%201-p-800.avif', x: 0.5 },
+};
+
+function serviceFallback(div) {
+  const key = Object.keys(SERVICE_FALLBACKS).find((k) => div.classList.contains(k));
+  return key ? SERVICE_FALLBACKS[key] : null;
+}
+
+function videoFailed(video) {
+  return !!video.error;
+}
+
+if (window.matchMedia("(min-width: 991px)").matches) {
+gsap.registerPlugin(ScrollTrigger);
+
+/* Plane sizes below were made for a 16:9 window: width follows the
+   window width (like the vw layout), height followed the window height,
+   so other window shapes squashed the cards. Height now follows the
+   width; at 16:9 nothing changes. */
+const flyingMeshes = [];
+
+function fitFlyingMesh(mesh) {
+  mesh.scale.y = (window.innerWidth / window.innerHeight) / (16 / 9);
+}
+
+/* image -> canvas cropped like object-fit: cover to the card shape */
+function coverTexture(img, x) {
+  const W = 540, H = 798;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+  canvas.getContext('2d').drawImage(img, (W - w) * x, (H - h) * 0.5, w, h);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  return texture;
+}
+
+function watchVideoFallback(div, video, uniforms) {
+  const fb = serviceFallback(div);
+  if (!fb) return;
+  let done = false;
+  const useImage = () => {
+    if (done) return;
+    done = true;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { uniforms.uTexture.value = coverTexture(img, fb.x); };
+    img.src = fb.url;
+  };
+  if (videoFailed(video)) useImage();
+  video.addEventListener('error', useImage);
+}
+
+function easeInOutSine(t) {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+}
+
+class FlyingDistortedImage {
+  constructor({ div, wave, geometry, startPos, endPos, triggerElement, renderer, scene, camera }) {
+    this.div = div;
+    this.wave = wave;
+    this.geometry = geometry;
+    this.startPos = startPos;
+    this.endPos = endPos;
+    this.scene = scene;
+    this.camera = camera;
+    this.renderer = renderer;
+    this.triggerElement = triggerElement;
+
+    //this.div.style.visibility = 'hidden';
+
+    this.uniforms = {
+      uTexture: { value: null },
+      uAlpha: { value: 0.0 },
+      uScroll: { value: 0.0 },
+      uScale: { value: 1.0 },
+      uWaveAmount: { value: 0.0 }, // new uniform for dynamic wave amount
+    };
+
+    this.init();
+  }
+  
+
+
+  async init() {
+    try {
+      await this.createMesh();
+      this.createScrollTrigger();
+    } catch (error) {
+      console.error(`[Init] Error during initialization:`, error);
+    }
+  }
+
+  async createMesh() {
+  const vertexShader = `
+    uniform float uScroll;
+uniform float uScale;
+uniform float uWaveAmount;
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  vec3 pos = position;
+
+  // Complex wave pattern
+  float t = uScroll * 3.1415; // 0 to PI scroll
+  float baseWave = sin((pos.x + pos.y) * 3.0 + t);
+  float layeredWave = sin(pos.y * 6.0 + t * 1.5) * 0.5 + cos(pos.x * 5.0 - t * 0.8) * 0.5;
+  float wave = (baseWave + layeredWave) * uWaveAmount;
+
+  pos.y += wave;
+  pos.x += wave * 0.35;
+
+  // Apply scale
+  pos.xy *= uScale;
+
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+}
+
+
+
+  `;
+
+  const fragmentShader = `
+    uniform sampler2D uTexture;
+    uniform float uAlpha;
+    varying vec2 vUv;
+    void main() {
+      vec4 color = texture2D(uTexture, vUv);
+      gl_FragColor = vec4(color.rgb, color.a * uAlpha);
+    }
+  `;
+
+  const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: this.uniforms,
+    transparent: true
+  });
+
+  this.mesh = new THREE.Mesh(this.geometry, material);
+  this.scene.add(this.mesh);
+  fitFlyingMesh(this.mesh);
+  flyingMeshes.push(this.mesh);
+
+  const videoElement = this.div.querySelector('video');
+  if (videoElement) {
+    videoElement.play(); // necessary to ensure video starts
+    const texture = new THREE.VideoTexture(videoElement);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.format = THREE.RGBFormat;
+
+    this.uniforms.uTexture.value = texture;
+    watchVideoFallback(this.div, videoElement, this.uniforms);
+  } else {
+    console.warn(`[Mesh] No <video> found in div`, this.div);
+  }
+
+  this.div.style.visibility = 'hidden';
+  this.mesh.position.set(this.startPos.x, this.startPos.y, 0);
+}
+
+
+  createScrollTrigger() {
+
+    ScrollTrigger.create({
+      trigger: this.triggerElement,
+      start: "top 1%",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (selfTrigger) => {
+  const rawProgress = selfTrigger.progress;
+  const progress = easeInOutSine(rawProgress); // Apply easing
+
+  this.uniforms.uScroll.value = progress;
+  this.uniforms.uAlpha.value = 1.0;
+
+  // Movement
+  const newX = this.startPos.x + (this.endPos.x - this.startPos.x) * progress;
+  const newY = this.startPos.y + (this.endPos.y - this.startPos.y) * progress;
+  this.mesh.position.set(newX, newY, 1);
+
+  // Dynamic scale (optional bounce effect)
+  this.uniforms.uScale.value = 1.0 + progress * 1.5;
+
+
+  // Wave strength grows and fades along scroll
+  this.uniforms.uWaveAmount.value = Math.pow(Math.sin(progress * Math.PI), 1.5) * (this.wave || 0.2);
+}
+
+
+
+    });
+
+  
+  }
+}
+
+// === SHARED THREE.JS SETUP ===
+const renderer = new THREE.WebGLRenderer({
+  alpha: true,
+  preserveDrawingBuffer: true,
+  canvas: document.getElementById('webgl-canvas')
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1, 1);
+
+// === TRIGGER ELEMENT ===
+const triggerElement = document.querySelector('.hp_canvas_img_wrapper');
+
+// === PROCESS EACH ITEM ===
+const serviceItems = document.querySelectorAll('.hp_hero_service_item');
+
+
+serviceItems.forEach((div, index) => {
+  // === UNIQUE CONFIG PER COMBO CLASS ===
+  let wave, geometry, startPos, endPos;
+
+  if (div.classList.contains('ls-1')) {
+    wave = -0.2;
+    geometry = new THREE.PlaneGeometry(0.16, 0.42);
+    startPos = { x: 0.381, y: -0.73 };
+    endPos = { x: -0.7, y: 0.4 };
+  } else if (div.classList.contains('ls-2')) {
+    wave = 0.1;
+    geometry = new THREE.PlaneGeometry(0.16, 0.42);
+    startPos = { x: 0.5435, y: -0.73 };
+    endPos = { x: -0.23, y: 0.2 };
+  } else if (div.classList.contains('ls-3')) {
+    wave = -0.3;
+    geometry = new THREE.PlaneGeometry(0.16, 0.42);
+    startPos = { x: 0.7065, y: -0.73 };
+    endPos = { x: 0.23, y: -0.2 };
+  } else if (div.classList.contains('ls-4')) {
+    wave = 0.3;
+    geometry = new THREE.PlaneGeometry(0.16, 0.42);
+    startPos = { x: 0.87, y: -0.73 };
+    endPos = { x: 0.7, y: -0.4 };
+  } else {
+    wave = 0;
+    geometry = new THREE.PlaneGeometry(0.25, 0.57);
+    startPos = { x: -1, y: -1 };
+    endPos = { x: 0, y: 0 };
+  }
+
+ 
+
+  new FlyingDistortedImage({
+    div,
+    wave,
+    geometry,
+    startPos,
+    endPos,
+    triggerElement,
+    renderer,
+    scene,
+    camera
+  });
+});
+
+// === RENDER LOOP ===
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  flyingMeshes.forEach(fitFlyingMesh);
+});
+
+}
+
+/* Tablet / mobile show the card videos directly: same fallback image
+   when a video fails to load. */
+if (!window.matchMedia("(min-width: 991px)").matches) {
+  document.querySelectorAll('.hp_hero_service_item').forEach((div) => {
+    const video = div.querySelector('video');
+    const fb = video && serviceFallback(div);
+    if (!fb) return;
+    let done = false;
+    const useImage = () => {
+      if (done) return;
+      done = true;
+      const img = document.createElement('img');
+      img.src = fb.url;
+      img.alt = '';
+      img.style.cssText = `width:100%;height:100%;object-fit:cover;object-position:${fb.x * 100}% 50%`;
+      video.replaceWith(img);
+    };
+    if (videoFailed(video)) useImage();
+    video.addEventListener('error', useImage);
+  });
+}
+
+</script>
+
+
