@@ -380,6 +380,17 @@
      top-nya di (1 - nilai ini) x tinggi layar */
   const NEXT_SECTION_OFFSET = 0.9;
 
+  /* Progress logo tepat saat hero habis.
+     0 - ~0.15 = kartu belum bergerak (delay),
+     jadi bagian diam itu terjadi di balik hero
+     yang memudar dan logo langsung mencar.
+     Titik akhir animasi tetap sama. 0 = lama. */
+  const LOGO_START_AT = 0.15;
+
+  function logoProgress(raw) {
+    return clamp01(LOGO_START_AT + (1 - LOGO_START_AT) * raw);
+  }
+
   /* =========================================
      HERO
      Urutan: heading SILENT POWER merapat
@@ -1081,7 +1092,7 @@
 
       const runAfterHero = Math.max(viewportHeight * 0.5, visibleRun - heroHoldPx);
 
-      scrollP = clamp01((-trackRect.top - heroHoldPx) / (runAfterHero * ANIMATION_END_AT_RESPONSIVE));
+      scrollP = logoProgress((-trackRect.top - heroHoldPx) / (runAfterHero * ANIMATION_END_AT_RESPONSIVE));
 
       return;
     }
@@ -1097,7 +1108,7 @@
     const animationDistance = Math.max(viewportHeight * 0.5, fullScrollDistance * ANIMATION_END_AT - heroHoldPx);
 
     /* logo baru jalan setelah hero hilang */
-    scrollP = clamp01((-rect.top - heroHoldPx) / animationDistance);
+    scrollP = logoProgress((-rect.top - heroHoldPx) / animationDistance);
   }
 
   /* =========================================

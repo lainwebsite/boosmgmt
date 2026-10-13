@@ -128,3 +128,12 @@ Same visuals, less work per frame. Tests: `test/collage-idle-equivalence.test.mj
   forever. Now elements an IntersectionObserver reports as off screen count as 0% visible
   without the walk (same result), finished one-shot items leave the list, and the ticker
   stops once nothing is left to watch.
+
+## Logo scatter starts as the hero disappears (2026-10-13)
+Recording: after the hero faded the B logo sat still ~1s before scattering. Cause: each
+card's start is delayed by its distance from the centre (`delays`, min ~0.08, median
+~0.13), so progress 0 -> ~0.15 moves nothing. `LOGO_START_AT = 0.15`: progress is already
+0.15 when the hero fade ends, the still part runs behind the fading hero (< 3px movement),
+and the end of the animation stays at the same scroll position. Old: 0px movement for the
+first ~450px of scroll after the hero (1440x900); new: moving from the first pixels.
+`LOGO_START_AT = 0` restores the old timing. Test: `test/logo-start-after-hero.test.mjs`.
