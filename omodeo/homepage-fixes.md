@@ -14,7 +14,10 @@ RB-24 (mobile nav menu vertical centering, thread 918) intentionally NOT done, p
 | 874, 883 | RB-06, RB-12 | new `.wgw-body-text` wrapper (max-width 24rem) around the What Guides the Work paragraph |
 | 877, 884 | RB-09, RB-13 | `.hp-rw-top-content-txt` max-width 30rem -> 22rem |
 | 875, 876 | RB-07, RB-08 | recent-work card top border colour -> rgba(0,0,0,0.15); `.btn-line.is-1` -> rgba(0,0,0,0.2) |
-| 878 | RB-10 | `.section.another-hero.ow-stage` background #1a1410 so any seam shows dark instead of light (unverified) |
+| 878 | RB-10 | `.section.another-hero.ow-stage` background #1a1915 (brand dark, per client) so any seam shows dark instead of light (unverified) |
 | 886, 887 | RB-15, RB-16 | footer `.form-and-button` align-items center, `.form-arrow` margin-bottom 0 |
 | 885 | RB-14 | tablet and down: footer bottom row stacks; Terms / Privacy first, All Right Reserved below |
 | 889, 890 | RB-18, RB-19 | tablet and down: footer bottom row font-size 12px |
+
+## Rule from client
+Dark overlay backgrounds use #1a1915 (e.g. Home RB-10 Our Work seam).
