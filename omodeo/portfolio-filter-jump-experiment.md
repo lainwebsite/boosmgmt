@@ -44,3 +44,12 @@ on the Portfolio grid only: `[fs-list-element="list"] .portfolio-card-item .imag
 (absolute, 100% x 100%, margin 0, transform none, object-fit cover). Only the Portfolio page has `fs-list-element="list"`, so
 the Home Recent Work and About Featured Work cards keep their parallax.
 Back to parallax on: set the Portfolio page script to 1.3.0.
+
+## Round 6 (client: "still not smooth, check again")
+No new recording came with this request, and the one recording we have (11:40) was taken before round 2, so it only tested 1.1.0.
+Found a real bug in my own 1.4.0 by simulating the filter change in Chromium and measuring frame-to-frame change on the recorded video:
+the no-parallax CSS was scoped to `[fs-list-element="list"]`, but the snapshot clone has that attribute removed, so the snapshot still
+showed the old oversized/cropped image while the live grid was already flat -> the grid popped on the very click frame.
+`PortfolioFilterSmooth` 1.4.1 (`omodeo/PortfolioFilterSmooth-1.4.1.js`): rule scoped by a class (`pf-grid`) added to the list, so the clone
+looks identical; clone `id` removed. In the simulation the click-frame spike is gone and the change ramps over about 1s.
+Not verified on staging with real Finsweet.
