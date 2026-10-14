@@ -21,3 +21,7 @@ RB-24 (mobile nav menu vertical centering, thread 918) intentionally NOT done, p
 
 ## Rule from client
 Dark overlay backgrounds use #1a1915 (e.g. Home RB-10 Our Work seam).
+
+## RB-24 (thread 918) — nav overlay menu vertically centered, tablet and down
+Navbar component: `.navlink-wrapper` at medium (<=991px): `padding-top` 50vh -> 0, `flex-grow: 1`, `align-items: center`, so the link row sits centered in the free space of the overlay instead of starting at the vertical middle. `.nav-menu-2` height 100vh -> 100svh at medium (no URL-bar jiggle). Published to staging, not verified visually.
+Rollback: `.navlink-wrapper` medium overrides removed, `.nav-menu-2` medium height removed.
