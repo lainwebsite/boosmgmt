@@ -14,3 +14,11 @@ Note: the list has `fs-list-resetix="true"` (Finsweet resets Webflow interaction
 3. Wrapper element `97999f7e-d7cb-845a-2b84-ce76e56c809b` on Portfolio: style names back to just `portfolio-archive_list-wrapper`.
 4. Publish to staging.
 (Unused leftovers are harmless: combo class `portfolio-filter-list`, registered script versions 1.0.0 and 1.0.1.)
+
+## Round 2 (still jumpy after round 1)
+Replaced round 1 with `PortfolioFilterSmooth` 1.1.0 (Portfolio page footer only, file `omodeo/PortfolioFilterSmooth-1.1.0.js`):
+- On any change inside the filters form (tabs and sort select) the list wrapper height is frozen before Finsweet re-renders.
+- Once the list settles (350ms after the last change) the wrapper height animates to the new height (0.5s), then returns to auto, then parallax is re-nudged.
+- Removed the static `min-height: 70vh` combo from the wrapper (it blocked shrinking). Fade set to 450ms / stagger 30.
+
+Rollback to the state before ANY experiment: Portfolio page scripts -> [], wrapper style names -> `portfolio-archive_list-wrapper`, attributes `fs-list-duration` 450 and `fs-list-stagger` 40, publish to staging.
