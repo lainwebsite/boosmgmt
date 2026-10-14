@@ -22,3 +22,11 @@ Replaced round 1 with `PortfolioFilterSmooth` 1.1.0 (Portfolio page footer only,
 - Removed the static `min-height: 70vh` combo from the wrapper (it blocked shrinking). Fade set to 450ms / stagger 30.
 
 Rollback to the state before ANY experiment: Portfolio page scripts -> [], wrapper style names -> `portfolio-archive_list-wrapper`, attributes `fs-list-duration` 450 and `fs-list-stagger` 40, publish to staging.
+
+## Round 3 (from the client screen recording, 1920x934 @ 60fps, filters All -> Kitchen -> Bathroom -> All)
+Findings from the frames (50ms apart): the grid hard-cuts in ONE frame on every filter change. No fade is visible, so the
+Finsweet fade (and the round 2 height animation) did not show. No vertical page jump was visible; the cut itself is the jump.
+Fix: `PortfolioFilterSmooth` 1.2.0 (`omodeo/PortfolioFilterSmooth-1.2.0.js`), Portfolio page footer only.
+It lays a snapshot of the current list over the grid, lets Finsweet render underneath, then crossfades (0.5s) while the
+wrapper height animates. Safety timer 1.5s restores everything. Lifecycle tested on a mock page in Chromium; not on staging.
+Rollback is unchanged (see above).
