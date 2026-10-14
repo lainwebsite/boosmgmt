@@ -14,3 +14,6 @@ Applied to the reveal wrapper (`.ow-stage > .padding-top.padding-huge`) on:
 - Portfolio (Our Work)
 
 Published to staging only. Not verified in a browser (webflow.io not reachable from the session).
+
+## CTA component
+CTA wrapper (`.padding-top.padding-huge`) got the `ow-no-pad` combo, so the CTA has no top padding on every page that uses it. Published to staging only.
