@@ -37,3 +37,10 @@ Rollback is unchanged (see above).
 - new cards rise in (translateY 18px -> 0) with a 55ms stagger while the snapshot of the old grid fades out,
 - full cleanup of inline styles after the animation. Lifecycle tested on a mock page in Chromium; not on staging.
 Rollback: same as above, or go back to 1.2.0 / 1.1.0 by setting the page script version.
+
+## Round 5 (client: "still choppy, turn parallax off")
+`PortfolioFilterSmooth` 1.4.0 (`omodeo/PortfolioFilterSmooth-1.4.0.js`): same crossfade as 1.3.0 plus a CSS rule that turns the card parallax off
+on the Portfolio grid only: `[fs-list-element="list"] .portfolio-card-item .image-content` is forced to fill its frame
+(absolute, 100% x 100%, margin 0, transform none, object-fit cover). Only the Portfolio page has `fs-list-element="list"`, so
+the Home Recent Work and About Featured Work cards keep their parallax.
+Back to parallax on: set the Portfolio page script to 1.3.0.
