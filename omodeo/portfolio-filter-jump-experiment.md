@@ -53,3 +53,11 @@ showed the old oversized/cropped image while the live grid was already flat -> t
 `PortfolioFilterSmooth` 1.4.1 (`omodeo/PortfolioFilterSmooth-1.4.1.js`): rule scoped by a class (`pf-grid`) added to the list, so the clone
 looks identical; clone `id` removed. In the simulation the click-frame spike is gone and the change ramps over about 1s.
 Not verified on staging with real Finsweet.
+
+## Round 7 (client: 1.4.1 is smooth, "can we keep it but with parallax?")
+`PortfolioFilterSmooth` 1.5.0 (`omodeo/PortfolioFilterSmooth-1.5.0.js`): keeps the 1.4.1 crossfade and the Webflow IX2 parallax stays off on the grid
+(IX2 resets on every Finsweet render, which was the jump). A small own parallax replaces it: image 120% tall, shifted 0 to -20% of the frame
+while the card crosses the viewport, stored as CSS var `--py` on the image (scroll + resize, rAF throttled). Because it lives in a CSS var the
+snapshot clone is identical to the live grid and new cards are positioned before they fade in.
+Mock test in Chromium: --py follows scroll, no spike on the click frame. Not verified on staging with real Finsweet.
+Back to the no-parallax version the client approved: set the Portfolio page script to 1.4.1.
