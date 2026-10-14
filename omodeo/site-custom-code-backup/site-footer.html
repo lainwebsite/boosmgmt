@@ -1,0 +1,966 @@
+<!-- =========================================================
+     FINSWEET ATTRIBUTES
+========================================================= -->
+<script async type="module" src="https://cdn.jsdelivr.net/npm/@finsweet/attributes@2/attributes.js" fs-list></script>
+
+<!-- PRELOADER: dipindah ke registered script "PreloaderOncePerSession" (header, CSS-driven) -->
+
+<!-- =========================================================
+     GLOBAL ANIMATIONS
+========================================================= -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------------------------------------------------------
+     TEXT REVEAL
+     Elemen yang masuk layar bersamaan muncul berurutan (stagger halus),
+     dan layer GPU dilepas setelah transisi selesai.
+  --------------------------------------------------------- */
+
+    const textElements = document.querySelectorAll('.anim-text-reveal');
+
+    if (reduceMotion) {
+      textElements.forEach((element) => {
+        element.classList.add('is-visible');
+      });
+    } else if (textElements.length) {
+      const textObserver = new IntersectionObserver(
+        (entries, observer) => {
+          let order = 0;
+
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+
+            const element = entry.target;
+
+            element.style.transitionDelay = `${Math.min(order * 0.09, 0.45).toFixed(2)}s`;
+
+            order += 1;
+
+            element.classList.add('is-visible');
+
+            element.addEventListener(
+              'transitionend',
+              (event) => {
+                if (event.propertyName !== 'transform') return;
+
+                element.style.transitionDelay = '';
+                element.style.willChange = 'auto';
+              },
+              { once: false },
+            );
+
+            observer.unobserve(element);
+          });
+        },
+        {
+          threshold: 0.15,
+          rootMargin: '0px 0px -5% 0px',
+        },
+      );
+
+      textElements.forEach((element) => {
+        textObserver.observe(element);
+      });
+    }
+
+    /* ---------------------------------------------------------
+     IMAGE REVEAL
+  --------------------------------------------------------- */
+
+    const imageElements = document.querySelectorAll('.anim-image-reveal');
+
+    if (!imageElements.length) return;
+
+    if (reduceMotion || typeof gsap === 'undefined') {
+      imageElements.forEach((element) => {
+        element.style.opacity = '1';
+        element.style.clipPath = 'inset(0% 0% 0% 0%)';
+      });
+
+      return;
+    }
+
+    if (typeof ScrollTrigger !== 'undefined') {
+      gsap.registerPlugin(ScrollTrigger);
+    }
+
+    imageElements.forEach((element) => {
+      gsap.to(element, {
+        clipPath: 'inset(0% 0% 0% 0%)',
+        opacity: 1,
+        duration: 1.4,
+        ease: 'power3.out',
+
+        scrollTrigger:
+          typeof ScrollTrigger !== 'undefined'
+            ? {
+                trigger: element,
+                start: 'top 85%',
+                once: true,
+              }
+            : undefined,
+      });
+    });
+  });
+</script>
+
+<!-- =========================================================
+     LENIS SMOOTH SCROLL
+========================================================= -->
+<script>
+  (() => {
+    let lenis = null;
+    let rafId = null;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------------------------------------------------------
+     RAF
+  --------------------------------------------------------- */
+
+    function startRaf() {
+      if (!lenis || rafId) return;
+
+      function raf(time) {
+        lenis.raf(time);
+
+        rafId = requestAnimationFrame(raf);
+      }
+
+      rafId = requestAnimationFrame(raf);
+    }
+
+    function stopRaf() {
+      if (!rafId) return;
+
+      cancelAnimationFrame(rafId);
+
+      rafId = null;
+    }
+
+    /* ---------------------------------------------------------
+     CONTROLS
+  --------------------------------------------------------- */
+
+    function initControls() {
+      document.querySelectorAll('[data-lenis-start]').forEach((element) => {
+        element.addEventListener('click', () => {
+          lenis?.start();
+        });
+      });
+
+      document.querySelectorAll('[data-lenis-stop]').forEach((element) => {
+        element.addEventListener('click', () => {
+          lenis?.stop();
+        });
+      });
+
+      document.querySelectorAll('[data-lenis-toggle]').forEach((element) => {
+        element.addEventListener('click', () => {
+          if (!lenis) return;
+
+          const isStopped = element.classList.toggle('stop-scroll');
+
+          if (isStopped) {
+            lenis.stop();
+          } else {
+            lenis.start();
+          }
+        });
+      });
+    }
+
+    /* ---------------------------------------------------------
+     INITIALIZE
+  --------------------------------------------------------- */
+
+    function initializeLenis() {
+      if (typeof Lenis === 'undefined' || lenis) {
+        return;
+      }
+
+      lenis = new Lenis({
+        lerp: 0.1,
+        wheelMultiplier: 0.7,
+        gestureOrientation: 'vertical',
+        normalizeWheel: false,
+        smoothTouch: false,
+      });
+
+      /*
+       * Keep GSAP ScrollTrigger synchronized
+       * with Lenis.
+       */
+
+      if (typeof ScrollTrigger !== 'undefined') {
+        lenis.on('scroll', ScrollTrigger.update);
+      }
+
+      initControls();
+
+      startRaf();
+
+      /* -------------------------------------------------------
+       TAB VISIBILITY
+    ------------------------------------------------------- */
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          stopRaf();
+        } else {
+          startRaf();
+        }
+      });
+    }
+
+    /* ---------------------------------------------------------
+     LOAD LENIS
+  --------------------------------------------------------- */
+
+    function loadLenis() {
+      if (reduceMotion) return;
+
+      const script = document.createElement('script');
+
+      script.src = 'https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.23/bundled/lenis.min.js';
+
+      script.async = true;
+
+      script.onload = initializeLenis;
+
+      document.head.appendChild(script);
+    }
+
+    /* ---------------------------------------------------------
+     LOAD WHEN PAGE IS READY
+  --------------------------------------------------------- */
+
+    window.addEventListener('load', () => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadLenis, {
+          timeout: 1500,
+        });
+      } else {
+        setTimeout(loadLenis, 300);
+      }
+    });
+  })();
+</script>
+
+<!-- =========================================================
+     NAVBAR THEME
+========================================================= -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const navbar = document.querySelector('.navbar-2');
+
+    const sections = document.querySelectorAll('.nav-theme-light, .nav-theme-dark');
+
+    if (!navbar || !sections.length) return;
+
+    let ticking = false;
+
+    /* ---------------------------------------------------------
+     UPDATE THEME
+  --------------------------------------------------------- */
+
+    function updateNavbarTheme() {
+      const navbarRect = navbar.getBoundingClientRect();
+
+      /*
+       * Trigger point is the vertical center
+       * of the navbar.
+       */
+
+      const triggerPoint = navbarRect.top + navbarRect.height / 2;
+
+      let activeSection = null;
+
+      for (const section of sections) {
+        const rect = section.getBoundingClientRect();
+
+        if (rect.top <= triggerPoint && rect.bottom > triggerPoint) {
+          activeSection = section;
+
+          break;
+        }
+      }
+
+      if (!activeSection) {
+        ticking = false;
+
+        return;
+      }
+
+      /* -------------------------------------------------------
+       LIGHT SECTION
+       Logo + hamburger = DARK
+    ------------------------------------------------------- */
+
+      if (activeSection.classList.contains('nav-theme-light')) {
+        navbar.classList.add('is-theme-light');
+
+        navbar.classList.remove('is-theme-dark');
+      } else if (activeSection.classList.contains('nav-theme-dark')) {
+        /* -------------------------------------------------------
+       DARK SECTION
+       Logo + hamburger = WHITE
+    ------------------------------------------------------- */
+        navbar.classList.add('is-theme-dark');
+
+        navbar.classList.remove('is-theme-light');
+      }
+
+      ticking = false;
+    }
+
+    /* ---------------------------------------------------------
+     REQUEST UPDATE
+  --------------------------------------------------------- */
+
+    function requestNavbarUpdate() {
+      if (ticking) return;
+
+      ticking = true;
+
+      requestAnimationFrame(updateNavbarTheme);
+    }
+
+    /* ---------------------------------------------------------
+     INITIAL
+  --------------------------------------------------------- */
+
+    updateNavbarTheme();
+
+    /* ---------------------------------------------------------
+     EVENTS
+  --------------------------------------------------------- */
+
+    window.addEventListener('scroll', requestNavbarUpdate, {
+      passive: true,
+    });
+
+    window.addEventListener('resize', requestNavbarUpdate);
+
+    window.addEventListener('load', requestNavbarUpdate);
+  });
+</script>
+
+<!-- ================ GSAP ================= -->
+
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    /* =====================================================
+     CHECK GSAP
+  ===================================================== */
+
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+      console.warn('[MATERIAL] GSAP / ScrollTrigger tidak ditemukan.');
+
+      return;
+    }
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* =====================================================
+     HELPERS
+  ===================================================== */
+
+    function getNumber(element, prefix) {
+      for (const className of element.classList) {
+        const match = className.match(new RegExp(`^${prefix}(\\d+)$`));
+
+        if (match) {
+          return parseInt(match[1], 10);
+        }
+      }
+
+      return null;
+    }
+
+    function getItems(root, prefix) {
+      return Array.from(root.querySelectorAll(`[class*="${prefix}"]`))
+
+        .map((element) => ({
+          element,
+
+          number: getNumber(element, prefix),
+        }))
+
+        .filter((item) => item.number !== null)
+
+        .sort((a, b) => a.number - b.number);
+    }
+
+    /* Bagian teks yang muncul berurutan: judul+subjudul, deskripsi, pagination */
+    function getTextParts(content) {
+      const parts = [
+        content.querySelector('.reveal-bottom-item-top'),
+
+        content.querySelector('.reveal-bottom-item-desc > p'),
+
+        content.querySelector('.hp-ow-bottom-pagination'),
+      ].filter(Boolean);
+
+      return parts.length ? parts : [content];
+    }
+
+    /* =====================================================
+     GET MATERIAL SECTIONS
+  ===================================================== */
+
+    const stages = gsap.utils.toArray('.ow-stage');
+
+    stages.forEach((section, stageIndex) => {
+      /* =================================================
+         CLEAN LEGACY OUTER TRACK
+
+         Jika script versi lama masih pernah membuat:
+
+         .ow-stage-track
+             └── section.ow-stage
+
+         pindahkan section keluar.
+
+         Track TIDAK boleh membungkus section.
+      ================================================= */
+
+      const legacyTrack = section.parentElement;
+
+      if (legacyTrack && legacyTrack.classList.contains('ow-stage-track')) {
+        const legacyParent = legacyTrack.parentNode;
+
+        legacyParent.insertBefore(section, legacyTrack);
+
+        legacyTrack.remove();
+      }
+
+      /* =================================================
+         GET WEBFLOW PADDING
+      ================================================= */
+
+      const paddingWrapper = section.querySelector(':scope > .padding-top.padding-huge');
+
+      if (!paddingWrapper) {
+        console.warn(`[MATERIAL ${stageIndex + 1}] .padding-top.padding-huge tidak ditemukan.`);
+
+        return;
+      }
+
+      /* =================================================
+         GET REVEAL SCREEN
+      ================================================= */
+
+      const screen = paddingWrapper.querySelector('.reveal-container-wrapper.ow-stage-screen');
+
+      if (!screen) {
+        console.warn(`[MATERIAL ${stageIndex + 1}] .ow-stage-screen tidak ditemukan.`);
+
+        return;
+      }
+
+      /* =================================================
+         CREATE TRACK
+
+         IMPORTANT:
+
+         HANYA wrap:
+         .reveal-container-wrapper
+
+         BUKAN section.
+      ================================================= */
+
+      let track = screen.parentElement;
+
+      if (!track.classList.contains('ow-stage-track')) {
+        track = document.createElement('div');
+
+        track.className = 'ow-stage-track';
+
+        screen.parentNode.insertBefore(track, screen);
+
+        track.appendChild(screen);
+      }
+
+      /* =================================================
+         ELEMENTS INSIDE SCREEN
+      ================================================= */
+
+      const imageWrapper = screen.querySelector('.image-wrapp.anim-image-reveal');
+
+      const contentWrapper = screen.querySelector('.ow-stage-content');
+
+      if (!imageWrapper || !contentWrapper) {
+        console.warn(`[MATERIAL ${stageIndex + 1}] Image/content wrapper tidak ditemukan.`);
+
+        return;
+      }
+
+      /* =================================================
+         IMAGES
+      ================================================= */
+
+      const images = getItems(imageWrapper, 'image-reveal-');
+
+      /* =================================================
+         CONTENT
+      ================================================= */
+
+      const contents = getItems(contentWrapper, 'reveal-item-');
+
+      /* =================================================
+         CONTENT MAP
+      ================================================= */
+
+      const contentMap = new Map(contents.map((item) => [item.number, item.element]));
+
+      /* =================================================
+         PAIRS
+
+         image-reveal-1 ↔ reveal-item-1
+         image-reveal-2 ↔ reveal-item-2
+         ...
+      ================================================= */
+
+      const pairs = images
+
+        .map((imageItem) => {
+          const content = contentMap.get(imageItem.number);
+
+          if (!content) {
+            console.warn(`[MATERIAL] reveal-item-${imageItem.number} tidak ditemukan.`);
+
+            return null;
+          }
+
+          return {
+            number: imageItem.number,
+
+            image: imageItem.element,
+
+            content,
+
+            parts: getTextParts(content),
+          };
+        })
+
+        .filter(Boolean);
+
+      const itemCount = pairs.length;
+
+      if (!itemCount) {
+        console.warn(`[MATERIAL ${stageIndex + 1}] Tidak ada pair reveal.`);
+
+        return;
+      }
+
+      /* =================================================
+         CREATE IMAGE LAYERS
+      ================================================= */
+
+      pairs.forEach((pair, index) => {
+        let layer = pair.image.parentElement;
+
+        if (!layer.classList.contains('ow-image-layer')) {
+          layer = document.createElement('div');
+
+          layer.className = 'ow-image-layer';
+
+          pair.image.parentNode.insertBefore(layer, pair.image);
+
+          layer.appendChild(pair.image);
+        }
+
+        layer.style.zIndex = index + 1;
+
+        pair.layer = layer;
+      });
+
+      /* =================================================
+         AUTO PAGINATION
+      ================================================= */
+
+      pairs.forEach((pair, index) => {
+        const pagination = pair.content.querySelector('.hp-ow-bottom-pagination');
+
+        if (!pagination) {
+          return;
+        }
+
+        const numbers = pagination.querySelectorAll('.heading-style-h2');
+
+        if (numbers.length < 2) {
+          return;
+        }
+
+        /*
+             CURRENT
+          */
+
+        numbers[0].textContent = String(index + 1).padStart(2, '0');
+
+        /*
+             TOTAL
+          */
+
+        numbers[numbers.length - 1].textContent = String(itemCount).padStart(2, '0');
+      });
+
+      /* =================================================
+         TRACK HEIGHT
+
+         Desktop:
+
+         1 = 100svh
+         2 = 190svh
+         3 = 280svh
+         4 = 370svh
+      ================================================= */
+
+      function updateTrackHeight() {
+        const mobile = window.matchMedia('(max-width: 991px)').matches;
+
+        const additional = mobile ? 65 : 90;
+
+        const height = 100 + (itemCount - 1) * additional;
+
+        track.style.height = `${height}svh`;
+      }
+
+      updateTrackHeight();
+
+      /* =================================================
+         GSAP RESPONSIVE
+      ================================================= */
+
+      const mm = gsap.matchMedia();
+
+      /* =================================================
+         CREATE REVEAL
+
+         Foto: wipe bawah → atas, mengikuti scroll (scrub).
+         Teks: animasi berbasis waktu yang dipicu saat item
+         aktif berganti, jadi tidak pernah berhenti di
+         setengah transparan dan tetap halus walau scroll cepat.
+      ================================================= */
+
+      function createReveal(mobile) {
+        /* -----------------------------------------------
+           TEXT MOTION
+        ----------------------------------------------- */
+
+        const enterY = mobile ? 22 : 34;
+
+        const exitY = mobile ? 14 : 20;
+
+        const enterDuration = reduceMotion ? 0.01 : mobile ? 0.8 : 1;
+
+        const exitDuration = reduceMotion ? 0.01 : 0.38;
+
+        const stagger = reduceMotion ? 0 : mobile ? 0.07 : 0.1;
+
+        const allText = [];
+
+        pairs.forEach((pair) => {
+          allText.push(pair.content, ...pair.parts);
+        });
+
+        /* -----------------------------------------------
+           RESET IMAGE STATE
+
+           First image visible.
+           Others hidden underneath.
+        ----------------------------------------------- */
+
+        pairs.forEach((pair, index) => {
+          gsap.set(pair.layer, {
+            clipPath: index === 0 ? 'inset(0% 0% 0% 0%)' : 'inset(100% 0% 0% 0%)',
+          });
+        });
+
+        /* -----------------------------------------------
+           RESET CONTENT STATE
+        ----------------------------------------------- */
+
+        let shown = 0;
+
+        const resetText = (activeIndex) => {
+          gsap.killTweensOf(allText);
+
+          pairs.forEach((pair, index) => {
+            const isActive = index === activeIndex;
+
+            gsap.set(pair.content, {
+              autoAlpha: isActive ? 1 : 0,
+
+              zIndex: index + 1,
+            });
+
+            gsap.set(pair.parts, {
+              autoAlpha: isActive ? 1 : 0,
+
+              y: 0,
+            });
+
+            pair.content.style.pointerEvents = isActive ? 'auto' : 'none';
+          });
+
+          shown = activeIndex;
+        };
+
+        resetText(0);
+
+        if (itemCount <= 1) {
+          return;
+        }
+
+        /* -----------------------------------------------
+           TEXT SWAP
+
+           direction: 1 = maju (teks baru naik dari bawah),
+                     -1 = mundur (teks baru turun dari atas)
+        ----------------------------------------------- */
+
+        const swapText = (nextIndex) => {
+          if (nextIndex === shown) return;
+
+          const direction = nextIndex > shown ? 1 : -1;
+
+          const previous = pairs[shown];
+
+          const next = pairs[nextIndex];
+
+          shown = nextIndex;
+
+          gsap.killTweensOf([previous.content, ...previous.parts, next.content, ...next.parts]);
+
+          pairs.forEach((pair) => {
+            pair.content.style.pointerEvents = 'none';
+          });
+
+          next.content.style.pointerEvents = 'auto';
+
+          /* Teks lama keluar cepat dan lembut */
+
+          gsap.to(previous.parts, {
+            autoAlpha: 0,
+
+            y: -direction * exitY,
+
+            duration: exitDuration,
+
+            ease: 'power2.in',
+
+            stagger: stagger * 0.4,
+
+            overwrite: true,
+
+            onComplete: () => {
+              gsap.set(previous.content, { autoAlpha: 0 });
+            },
+          });
+
+          /* Teks baru masuk berurutan, sedikit setelah teks lama mulai keluar */
+
+          gsap.set(next.content, { autoAlpha: 1 });
+
+          gsap.fromTo(
+            next.parts,
+
+            {
+              autoAlpha: 0,
+
+              y: direction * enterY,
+            },
+
+            {
+              autoAlpha: 1,
+
+              y: 0,
+
+              duration: enterDuration,
+
+              ease: 'power3.out',
+
+              stagger,
+
+              delay: reduceMotion ? 0 : 0.2,
+
+              overwrite: true,
+            },
+          );
+        };
+
+        /* =================================================
+           TIMELINE
+
+           Tiap transisi = wipe foto (0.75) + jeda baca (0.25).
+           Total = itemCount - 1 unit.
+        ================================================= */
+
+        const transitionCount = itemCount - 1;
+
+        const timeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: track,
+
+            /*
+                 Track dimulai persis setelah
+                 padding-top Webflow selesai.
+              */
+
+            start: 'top top',
+
+            /*
+                 Animasi selesai ketika bottom track
+                 mencapai bottom viewport.
+              */
+
+            end: 'bottom bottom',
+
+            /* Lebih besar = gerakan foto menyusul scroll lebih lembut */
+
+            scrub: mobile ? 0.6 : 0.8,
+
+            invalidateOnRefresh: true,
+
+            /* -----------------------------------------
+                 ITEM AKTIF
+
+                 Ganti saat wipe foto melewati
+                 tengah (0.375 dari 0.75).
+              ----------------------------------------- */
+
+            onUpdate(self) {
+              const time = self.progress * transitionCount;
+
+              const activeIndex = Math.min(Math.max(Math.floor(time + 0.625), 0), itemCount - 1);
+
+              swapText(activeIndex);
+            },
+
+            onRefresh(self) {
+              const time = self.progress * transitionCount;
+
+              resetText(Math.min(Math.max(Math.floor(time + 0.625), 0), itemCount - 1));
+            },
+          },
+        });
+
+        /* =================================================
+           TRANSITIONS (foto saja)
+        ================================================= */
+
+        for (let index = 1; index < itemCount; index++) {
+          const next = pairs[index];
+
+          const position = index - 1;
+
+          timeline.to(
+            next.layer,
+
+            {
+              clipPath: 'inset(0% 0% 0% 0%)',
+
+              duration: 0.75,
+
+              ease: 'power1.inOut',
+            },
+
+            position,
+          );
+        }
+
+        /* Pastikan total timeline = transitionCount unit (jeda baca di akhir tiap transisi) */
+
+        timeline.to({}, { duration: 0.0001 }, transitionCount);
+
+        /* =================================================
+           CLEANUP
+        ================================================= */
+
+        return () => {
+          if (timeline.scrollTrigger) {
+            timeline.scrollTrigger.kill();
+          }
+
+          timeline.kill();
+
+          gsap.killTweensOf(allText);
+        };
+      }
+
+      /* =================================================
+         DESKTOP
+      ================================================= */
+
+      mm.add('(min-width: 992px)', () => {
+        updateTrackHeight();
+
+        return createReveal(false);
+      });
+
+      /* =================================================
+         TABLET / MOBILE
+      ================================================= */
+
+      mm.add('(max-width: 991px)', () => {
+        updateTrackHeight();
+
+        return createReveal(true);
+      });
+
+      /* =================================================
+         RESIZE
+      ================================================= */
+
+      let resizeTimer;
+
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+
+        resizeTimer = setTimeout(
+          () => {
+            updateTrackHeight();
+
+            ScrollTrigger.refresh();
+          },
+
+          200,
+        );
+      });
+    });
+
+    /* =====================================================
+     INITIAL REFRESH
+  ===================================================== */
+
+    requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+    });
+
+    /* =====================================================
+     ASSETS LOADED
+  ===================================================== */
+
+    window.addEventListener(
+      'load',
+      () => {
+        ScrollTrigger.refresh();
+      },
+
+      {
+        once: true,
+      },
+    );
+  });
+</script>

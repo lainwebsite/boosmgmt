@@ -1,0 +1,128 @@
+<style>
+  /* Filter Default */
+
+  /* .ba-content-item-filter .radio-button-label {
+    color: #000;
+    opacity: 0.4;
+    transition:
+      opacity 0.3s ease,
+      color 0.3s ease;
+  } */
+
+  /* Filter Active */
+
+  .ba-content-item-filter .radio.filter-tab-active .radio-button-label {
+    color: #f5f5f5 !important;
+    opacity: 1 !important;
+  }
+
+  @keyframes scroll {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-100%);
+    }
+  }
+
+  .scroll {
+    animation: scroll 50s linear infinite;
+    will-change: transform;
+  }
+
+  .reverse {
+    animation-direction: reverse;
+  }
+
+  .marquee-image,
+  .hp-hero-logo {
+    -webkit-transform: translateZ(0);
+  }
+</style>
+
+
+
+<style>
+  .cp-pagination-number.w--current {
+    background: var(--burnt-umber);
+    color: var(--white);
+  }
+
+  .filter-tab-active {
+    background: var(--burnt-umber);
+    color: var(--white);
+  }
+
+  /* Transisi halus saat pindah tab filter */
+  .portfolio-wrapper .radio,
+  .portfolio-wrapper .radio-button-label {
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease,
+      opacity 0.35s ease;
+  }
+</style>
+
+<!-- HERO PARALLAX — transform dikunci, digerakkan GSAP (anti loncat) -->
+<style>
+  .portfolio-hero .image-content-hero {
+    transform: translate3d(0, var(--hero-py, 0%), 0) !important;
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+</style>
+
+<!-- FILTER TAB — MOBILE FULL WIDTH (grid: semua tab melebar sampai tepi kanan) -->
+<style>
+  @media screen and (max-width: 767px) {
+    .ba-content-item-filter-left {
+      display: grid !important;
+      grid-auto-flow: column !important;
+      grid-auto-columns: auto !important;
+      justify-content: stretch !important;
+      align-items: stretch !important;
+      column-gap: 0.5rem !important;
+      row-gap: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box;
+    }
+
+    /* Wrapper collection list dilebur, supaya semua tab menjadi item grid yang sejajar */
+    .ba-content-item-filter-left .w-dyn-list,
+    .ba-content-item-filter-left .w-dyn-items,
+    .ba-content-item-filter-left .radio-wrapper {
+      display: contents !important;
+    }
+
+    .ba-content-item-filter-left .w-dyn-item {
+      display: flex !important;
+      min-width: 0;
+    }
+
+    .ba-content-item-filter-left .w-dyn-empty {
+      display: none;
+    }
+
+    .ba-content-item-filter-left .radio {
+      display: flex !important;
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      margin: 0 !important;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      box-sizing: border-box;
+    }
+  }
+</style>
+
+<!-- OUR WORK REVEAL — hide pagination on this page only (kept in the DOM) -->
+<style>
+  .ow-stage .hp-ow-bottom-pagination {
+    display: none !important;
+  }
+</style>

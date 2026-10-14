@@ -1,27 +1,28 @@
-# Omodeo — script attachments (re-attached after the site transfer)
+# Omodeo — scripts now live in Site Settings custom code (inlined)
 
-After the client transferred the site, `get_site_scripts` / `get_page_scripts` returned 404 "Custom code block not found":
-the registered scripts still existed but their attachment to the site/pages was gone, so the preloader (and every script below) did not run.
-Re-attached on 2026-10-14 via the Data API and published to staging only. Not verified in a browser.
+Why: after the site transfer the Data API attachments of registered scripts disappeared (`get_site_scripts` -> 404), so the preloader and
+every other registered script stopped running. Registered-script attachments do not travel with a transfer/clone; Site Settings custom code does.
 
-## Site scripts
-| Script | Version | Location |
-|---|---|---|
-| PreloaderOncePerSession | 1.3.0 | header |
-| HeroIntro | 1.0.0 | header |
-| ScrollStability | 1.0.0 | header |
-| navtogglea11y | 1.0.0 | footer |
-| ctamobileparallax | 1.0.0 | footer |
-| navhideonscroll | 1.1.0 | footer |
-| PaginationFullState | 1.0.0 | footer |
-| PortfolioEmptyState | 1.0.1 | footer |
-| CtaImagePosition | 1.0.0 | footer |
-| OurWorkBathtubPosition | 1.0.0 | footer |
-| RevealMobileImageMargin | 1.0.0 | footer |
+On 2026-10-14 all registered scripts were inlined and the attachments were cleared (so nothing runs twice). Published to staging only.
+Not verified in a browser (webflow.io not reachable from the session).
 
-## Page scripts
-- Portfolio: PortfolioFilterSmooth 1.5.0 (footer)
+## Where each script lives now
+| Script | Now in |
+|---|---|
+| PreloaderOncePerSession 1.3.0, HeroIntro 1.0.0, ScrollStability 1.0.0 | Site Settings > Custom code > Head (after the existing `<style>`) |
+| navtogglea11y, ctamobileparallax, navhideonscroll 1.1.0, PaginationFullState, PortfolioEmptyState 1.0.1, CtaImagePosition, OurWorkBathtubPosition, RevealMobileImageMargin | Site Settings > Custom code > Footer (after the existing GSAP code) |
+| PortfolioFilterSmooth 1.5.0 | Portfolio page > Custom code > Footer (after the 3 existing blocks) |
 
-## Notes
-- The Site Settings custom code (head CSS incl. `.loader`, footer GSAP / Lenis / reveal code) was NOT affected.
-- If the site is transferred or cloned again, these attachments can disappear again. Option discussed: inline the scripts into Site Settings custom code so they travel with the site.
+## Files in this repo
+- `site-custom-code-backup/` — the head/footer (site) and head/footer (Portfolio page) exactly as they were BEFORE this change. Restore by pasting them back.
+- `site-custom-code-new/` — what is live now (site head + footer, Portfolio page footer).
+- Individual script sources: `omodeo/*.js`.
+
+## Rollback
+Paste the files from `site-custom-code-backup/` back into the same Custom code fields, then re-attach the registered scripts
+(list: see git history of this file; versions as above, header: preloader/herointro/scrollstability, footer: the rest) and the Portfolio page script.
+
+## Caveats
+- The registered script versions still exist in Webflow (unused). Do not re-attach them while the inline copies are present, they would run twice.
+- Future changes to these scripts must be made in Site Settings custom code (or the Portfolio page footer), not by registering a new version.
+- Home page has its own page-level head/footer code (not touched).

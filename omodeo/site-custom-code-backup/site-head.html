@@ -1,0 +1,899 @@
+<style>
+  /* =========================================================
+     00. GLOBAL / BODY
+  ========================================================= */
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* =========================================================
+     PRELOADER SCROLL LOCK
+  ========================================================= */
+
+  /* Compensate hidden scrollbar */
+  html.is-preloading body {
+    padding-right: var(--scrollbar-width, 0px);
+  }
+  /* =========================================================
+     PRELOADER
+  ========================================================= */
+
+  .loader {
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100dvh;
+
+    z-index: 99999;
+
+    display: flex;
+    overflow: hidden;
+
+    clip-path: inset(0% 0% 0% 0%);
+
+    will-change: clip-path;
+  }
+
+  /* LOGO */
+
+  .loader .logo-preloader {
+    opacity: 0;
+    transform: translateY(14px);
+
+    will-change: opacity, transform;
+  }
+
+  /* TEXT */
+
+  .loader .text-prelaoad {
+    opacity: 1;
+  }
+
+  .loader .preloader-word {
+    display: inline-block;
+
+    opacity: 0.5;
+
+    transform: translateY(10px);
+
+    will-change: opacity, transform;
+  }
+
+  /* IMAGE */
+
+  .loader .loader-logo > img {
+    opacity: 0;
+
+    transform: scale(1.025);
+
+    will-change: opacity, transform;
+  }
+
+  /* =========================================================
+     02. TEXT REVEAL
+  ========================================================= */
+
+  .anim-text-reveal {
+    opacity: 0;
+
+    transform: translateY(1.5rem);
+
+    transition:
+      opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+
+    will-change: opacity, transform;
+  }
+
+  .anim-text-reveal.is-visible {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+
+  /* =========================================================
+     03. IMAGE REVEAL
+  ========================================================= */
+
+  .anim-image-reveal {
+    overflow: hidden;
+
+    opacity: 0;
+
+    clip-path: inset(8% 0% 8% 0%);
+
+    will-change: opacity, clip-path;
+  }
+
+  /* =========================================================
+     04. BUTTON UNDERLINE
+  ========================================================= */
+
+  .button-underline-black {
+    position: relative;
+
+    display: inline-flex;
+
+    flex-direction: column;
+
+    text-decoration: none;
+  }
+
+  .button-inner {
+    overflow: hidden;
+  }
+
+  .button-text-wrapper {
+    position: relative;
+
+    height: 1.2em;
+
+    overflow: hidden;
+  }
+
+  .button-underline-black .btn-text {
+    display: block;
+
+    margin: 0 !important;
+
+    line-height: 1.2em;
+
+    transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  .button-underline-black .btn-text.is-2 {
+    position: absolute;
+
+    top: 100%;
+    left: 0;
+  }
+
+  .button-underline-black:hover .btn-text.is-1,
+  .button-underline-black:hover .btn-text.is-2 {
+    transform: translateY(-100%);
+  }
+
+  /* =========================================================
+     BUTTON LINE
+  ========================================================= */
+
+  .btn-line-wrapper {
+    position: relative;
+
+    width: fit-content;
+    min-width: 100%;
+
+    height: 1px;
+
+    margin-top: 8px;
+
+    overflow: hidden;
+  }
+
+  .btn-line {
+    position: absolute;
+
+    left: 0;
+    bottom: 0;
+
+    width: 100%;
+    height: 1px;
+
+    background: currentColor;
+
+    transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+
+    will-change: transform;
+  }
+
+  .btn-line.is-1 {
+    transform: translateX(0%);
+  }
+
+  .btn-line.is-2 {
+    transform: translateX(-100%);
+  }
+
+  .button-underline:hover .btn-line.is-1,
+  .button-underline-black:hover .btn-line.is-1 {
+    transform: translateX(100%);
+  }
+
+  .button-underline:hover .btn-line.is-2,
+  .button-underline-black:hover .btn-line.is-2 {
+    transform: translateX(0%);
+  }
+
+  /* =========================================================
+     05. PORTFOLIO FILTER
+  ========================================================= */
+
+  .ba-content-item-filter-left {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 0.5rem;
+  }
+
+  .radio-wrapper {
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 0.5rem;
+  }
+
+  .ba-content-item-filter .radio {
+    position: relative;
+
+    margin: 0;
+
+    cursor: pointer;
+  }
+
+  .ba-content-item-filter .radio-select {
+    position: absolute !important;
+
+    width: 1px !important;
+    height: 1px !important;
+
+    opacity: 0 !important;
+
+    pointer-events: none !important;
+  }
+
+  .ba-content-item-filter .radio-button-label {
+    margin: 0 !important;
+
+    cursor: pointer;
+
+    opacity: 0.4;
+
+    transition:
+      opacity 0.3s ease,
+      color 0.3s ease;
+  }
+
+  .ba-content-item-filter .radio.filter-tab-active .radio-button-label {
+    opacity: 1 !important;
+  }
+
+  .ba-content-item-filter .radio:not(.filter-tab-active):hover .radio-button-label {
+    opacity: 0.7;
+  }
+
+  .portfolio-card-item {
+    will-change: transform, opacity;
+  }
+
+  /* =========================================================
+     06. NAVBAR THEME
+  ========================================================= */
+
+  .navbar-2 {
+    color: #fff;
+  }
+
+  .navbar-2.is-theme-dark {
+    color: #fff;
+  }
+
+  .navbar-2.is-theme-light {
+    color: #181818;
+  }
+
+  /* =========================================================
+     07. LOGO
+  ========================================================= */
+
+  .logo-brand {
+    width: 206px;
+
+    max-width: 100%;
+
+    flex-shrink: 0;
+  }
+
+  .logo-brand svg {
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+  }
+
+  .navbar-2 .logo-brand svg path {
+    fill: currentColor !important;
+  }
+
+  .navbar-2 .logo-brand,
+  .navbar-2 .logo-brand svg {
+    transition: color 0.4s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  .navbar-2.is-theme-dark .logo-brand,
+  .navbar-2.is-theme-dark .logo-brand svg {
+    color: #fff !important;
+  }
+
+  .navbar-2.is-theme-light .logo-brand,
+  .navbar-2.is-theme-light .logo-brand svg {
+    color: #2a190f !important;
+  }
+
+  /* ---------------------------------------------------------
+     OPEN MENU LOGO
+  --------------------------------------------------------- */
+
+  .navbar-2:has(.menu-button.w--open) .logo-brand,
+  .navbar-2:has(.menu-button.w--open) .logo-brand svg {
+    color: #2a190f !important;
+  }
+
+  /* =========================================================
+     08. MENU BUTTON
+  ========================================================= */
+
+  .navbar-2 .menu-button {
+    position: relative !important;
+
+    justify-self: end;
+
+    align-self: center;
+
+    width: 32px;
+    height: 32px;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    display: grid !important;
+
+    place-items: center !important;
+
+    background: transparent !important;
+
+    color: inherit;
+
+    cursor: pointer;
+
+    transition: color 0.4s cubic-bezier(0.76, 0, 0.24, 1);
+  }
+
+  .navbar-2 .menu-button.w--open {
+    background: transparent !important;
+  }
+
+  .navbar-2:has(.menu-button.w--open) .menu-button {
+    color: #2a190f;
+  }
+
+  /* =========================================================
+     09. MENU ICON
+  ========================================================= */
+
+  .navbar-2 .menu-icon {
+    width: 32px !important;
+    height: 32px !important;
+
+    display: block !important;
+
+    transform-origin: center;
+  }
+
+  .navbar-2 .menu-icon line {
+    stroke: currentColor !important;
+  }
+
+  .navbar-2 .menu-icon path {
+    fill: currentColor !important;
+  }
+
+  /* =========================================================
+     10. NAV TOGGLE / HAMBURGER
+  ========================================================= */
+
+  .nav-toggle {
+    width: 1.9rem;
+    height: 1.9rem;
+
+    padding: 0;
+
+    border: 0;
+
+    background: transparent;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+  }
+
+  .nav-toggle svg {
+    width: 20px;
+    height: 20px;
+
+    overflow: visible;
+
+    transition: transform 0.3s ease;
+  }
+
+  .menu-button.w--open .nav-toggle svg {
+    transform: translateX(-0.1rem);
+  }
+
+  .nav-toggle svg line {
+    transition: transform 0.3s ease;
+
+    transform-box: view-box;
+
+    transform-origin: 10.5px 10px;
+  }
+
+  .menu-button.w--open .line-top {
+    transform: translateY(3.07px) rotate(45deg);
+  }
+
+  .menu-button.w--open .line-bottom {
+    transform: translateY(-2px) rotate(-45deg);
+  }
+
+  /* =========================================================
+     11. WEBFLOW RESET
+  ========================================================= */
+
+  .w-nav:before,
+  .w-nav:after,
+  .w-container:before,
+  .w-container:after {
+    display: none !important;
+  }
+
+  .navbar-2 .w-nav-button {
+    padding: 0 !important;
+
+    margin: 0 !important;
+
+    float: none !important;
+
+    background: transparent !important;
+  }
+
+  /* =========================================================
+     12. NAV OVERLAY
+  ========================================================= */
+
+  #w-nav-overlay-0 {
+    display: block !important;
+
+    top: 0 !important;
+
+    backdrop-filter: blur(0px);
+
+    transition: backdrop-filter 0.3s ease;
+  }
+
+  .navbar-2:has(.menu-button.w--open) #w-nav-overlay-0 {
+    backdrop-filter: blur(5px);
+  }
+
+  /* =========================================================
+     13. RESPONSIVE
+  ========================================================= */
+
+  @media screen and (max-width: 991px) {
+    .logo-brand {
+      width: 180px;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+    .logo-brand {
+      width: 160px;
+    }
+  }
+
+  @media screen and (max-width: 479px) {
+    .logo-brand {
+      width: 145px;
+    }
+  }
+
+  /* =========================================================
+     14. REDUCED MOTION
+  ========================================================= */
+
+  @media (prefers-reduced-motion: reduce) {
+    .anim-text-reveal,
+    .anim-image-reveal {
+      opacity: 1 !important;
+
+      transform: none !important;
+
+      clip-path: none !important;
+
+      transition: none !important;
+    }
+
+    .loader .logo-preloader,
+    .loader .text-prelaoad,
+    .loader .loader-logo > img {
+      opacity: 1;
+
+      transform: none;
+    }
+
+    .navbar-2 *,
+    .button-underline *,
+    .button-underline-black * {
+      transition: none !important;
+    }
+  }
+
+  /* =========================================================
+     15. REVEAL SECTION
+  ========================================================= */
+  /* =========================================================
+   OMODEO — MATERIAL REVEAL
+========================================================= */
+
+  /* =========================================================
+   01. SECTION
+
+   Section TIDAK sticky.
+   Section TIDAK menjadi track.
+========================================================= */
+
+  .ow-stage {
+    position: relative !important;
+
+    width: 100%;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    margin: 0;
+
+    overflow: visible !important;
+
+    isolation: isolate;
+  }
+
+  /* =========================================================
+   02. WEBFLOW PADDING
+
+   Padding Webflow tetap dipertahankan.
+
+   Jangan gunakan:
+   padding-top: 0 !important;
+========================================================= */
+
+  .ow-stage > .padding-top.padding-huge {
+    position: relative;
+
+    width: 100%;
+
+    height: auto !important;
+    min-height: 0 !important;
+
+    overflow: visible !important;
+  }
+
+  /* =========================================================
+   03. SCROLL TRACK
+
+   JS akan memberikan height otomatis.
+
+   Contoh 4 items:
+   height: 370svh;
+========================================================= */
+
+  .ow-stage .ow-stage-track {
+    position: relative;
+
+    width: 100%;
+
+    margin: 0;
+    padding: 0;
+
+    overflow: visible !important;
+  }
+
+  /* =========================================================
+   04. STICKY REVEAL SCREEN
+
+   Hanya area ini yang sticky.
+========================================================= */
+
+  .ow-stage .ow-stage-screen {
+    position: sticky !important;
+
+    top: 0;
+
+    width: 100%;
+
+    height: 100vh !important;
+    height: 100svh !important;
+
+    min-height: 100vh !important;
+    min-height: 100svh !important;
+
+    margin: 0;
+
+    overflow: hidden !important;
+
+    z-index: 1;
+
+    isolation: isolate;
+  }
+
+  /* =========================================================
+   05. REVEAL CONTAINER
+========================================================= */
+
+  .ow-stage .reveal-container {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    min-height: 0;
+
+    margin: 0;
+
+    overflow: hidden;
+  }
+
+  /* =========================================================
+   06. IMAGE WRAPPER
+========================================================= */
+
+  .ow-stage .image-wrapp.anim-image-reveal {
+    position: absolute !important;
+
+    inset: 0;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: none !important;
+
+    margin: 0 !important;
+
+    overflow: hidden !important;
+
+    z-index: 1;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   07. IMAGE LAYER
+
+   Dibuat otomatis oleh JS.
+========================================================= */
+
+  .ow-stage .ow-image-layer {
+    position: absolute;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+    will-change: clip-path;
+
+    transform: translateZ(0);
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* =========================================================
+   08. IMAGE
+
+   Desktop tetap mempertahankan Webflow parallax transform.
+========================================================= */
+
+  .ow-stage .ow-image-layer > [class*='image-reveal-'] {
+    position: relative !important;
+
+    display: block;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    will-change: transform;
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* =========================================================
+   09. GRAIN / OVERLAY
+========================================================= */
+
+  .ow-stage .color-graind-2 {
+    position: absolute !important;
+
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 100;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   10. MAIN CONTENT CONTAINER
+========================================================= */
+
+  .ow-stage .container-large.full-height {
+    position: relative !important;
+
+    width: 100%;
+    height: 100% !important;
+
+    min-height: 0;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    z-index: 200;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   11. CONTENT WRAPPER
+========================================================= */
+
+  .ow-stage .reveal-section-main-content-wrapp {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    min-height: 0;
+
+    z-index: 200;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   12. TITLE
+========================================================= */
+
+  .ow-stage .reveal-content-txt,
+  .ow-stage .reveal-content-title {
+    position: relative;
+
+    z-index: 2;
+
+    pointer-events: auto;
+  }
+
+  /* =========================================================
+   13. BOTTOM CONTENT AREA
+
+   reveal-item semuanya ditumpuk
+   pada grid cell yang sama.
+========================================================= */
+
+  .ow-stage .ow-stage-content {
+    position: relative;
+
+    display: grid !important;
+
+    width: 100%;
+
+    min-width: 0;
+    min-height: 0;
+
+    overflow: hidden;
+
+    z-index: 2;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   14. REVEAL ITEMS
+========================================================= */
+
+  .ow-stage .reveal-bottom-item {
+    position: relative !important;
+
+    grid-area: 1 / 1;
+
+    width: 100%;
+
+    min-width: 0;
+
+    margin: 0;
+
+    will-change: opacity, transform;
+
+    pointer-events: none;
+  }
+
+  /* =========================================================
+   15. PAGINATION
+========================================================= */
+
+  .ow-stage .hp-ow-bottom-pagination {
+    position: relative;
+
+    z-index: 2;
+  }
+
+  /* =========================================================
+   16. TABLET + MOBILE
+========================================================= */
+
+  @media screen and (max-width: 991px) {
+    .ow-stage .ow-stage-screen {
+      height: 100vh !important;
+      height: 100dvh !important;
+
+      min-height: 100vh !important;
+      min-height: 100dvh !important;
+    }
+
+    /*
+     Disable transform Webflow parallax di mobile
+     supaya image tidak terlalu zoom / bergeser.
+  */
+
+    .ow-stage .ow-image-layer > [class*='image-reveal-'] {
+      position: absolute !important;
+
+      inset: 0;
+
+      width: 100% !important;
+      height: 100% !important;
+
+      max-width: none !important;
+
+      object-fit: cover;
+      object-position: center;
+
+      transform: none !important;
+
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+  }
+
+  /* =========================================================
+   17. REDUCED MOTION
+========================================================= */
+
+  @media (prefers-reduced-motion: reduce) {
+    .ow-stage .ow-image-layer,
+    .ow-stage .reveal-bottom-item {
+      will-change: auto;
+    }
+  }
+</style>
