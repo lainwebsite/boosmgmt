@@ -30,3 +30,10 @@ Fix: `PortfolioFilterSmooth` 1.2.0 (`omodeo/PortfolioFilterSmooth-1.2.0.js`), Po
 It lays a snapshot of the current list over the grid, lets Finsweet render underneath, then crossfades (0.5s) while the
 wrapper height animates. Safety timer 1.5s restores everything. Lifecycle tested on a mock page in Chromium; not on staging.
 Rollback is unchanged (see above).
+
+## Round 4 (client: "make it smoother")
+`PortfolioFilterSmooth` 1.3.0 (`omodeo/PortfolioFilterSmooth-1.3.0.js`), Portfolio page footer only:
+- wait before the swap 300ms -> 160ms (less lag), eases 0.5s -> 0.7-0.8s with a soft out-expo curve,
+- new cards rise in (translateY 18px -> 0) with a 55ms stagger while the snapshot of the old grid fades out,
+- full cleanup of inline styles after the animation. Lifecycle tested on a mock page in Chromium; not on staging.
+Rollback: same as above, or go back to 1.2.0 / 1.1.0 by setting the page script version.
