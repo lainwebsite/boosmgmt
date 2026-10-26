@@ -59,3 +59,8 @@ CTA component (shared, so Portfolio + Lawnview + all pages):
 - copy "custom cabinetry" kept (client copy), reference image still says "millwork"
 Staging only. Not visually verified (webflow.io not reachable from the session).
 Rollback: remove color on the combo above; put comma back inside the first italic span.
+
+### CTA follow-up (client screenshot: words scattered in columns)
+Cause: global combo `.text-color-white.lower-white` has `display:flex`, so every text node / italic span in the CTA h2 became a flex item.
+Fix: `.heading-style-h5.text-cta.text-color-white.lower-white` -> `display:block`, `text-align:center` (heading flows as one centered paragraph).
+Staging only, not visually verified. Rollback: remove display/text-align from that combo.
