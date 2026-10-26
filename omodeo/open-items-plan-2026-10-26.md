@@ -69,3 +69,7 @@ Staging only, not visually verified. Rollback: remove display/text-align from th
 Frame analysis: one 1px row at the bottom edge of the Our Work image is ~2x brighter than the overlaid image (un-overlaid raw photo; parallax-transformed image bleeds 1px past the area the overlay covers). Not a Roundable artifact.
 Fix (Designer styles, no code): `.reveal-container::after` = 2px strip, #1a1915, absolute bottom, z-index 1, pointer-events none (global class, so Home/About/Portfolio Our Work). `.reveal-container-wrapper.ow-stage-screen` bg #1a1410 -> #1a1915 (client colour rule).
 Staging only, not visually verified. Rollback: remove `::after` on `.reveal-container`; stage-screen bg back to #1a1410.
+
+### Same seam on other pages (client: "page lain masih ada bug serupa")
+Audit: About + Portfolio Our Work use `.reveal-container` (already covered by the ::after strip). Contact + Portfolio detail template have no reveal-container. CTA component (`.cta-container-inner`: relative, overflow hidden, 80vh, parallax image + `.color-graind-2`, sits above footer) has the same structure -> same 2px #1a1915 `::after` strip added. Applies to every page using CTA.
+Page/section was not named by the client, so this is a structural match, not a confirmed repro. Staging only, unverified visually. Rollback: remove `::after` on `.cta-container-inner`.
