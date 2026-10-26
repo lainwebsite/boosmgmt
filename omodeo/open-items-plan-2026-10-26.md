@@ -26,3 +26,27 @@ Layout / interaction:
 - RB-1.10 (#878) white line above overlay (waiting for client check; colour already #1a1915)
 Cannot do from here:
 - RB-3.06 (#902) blurry Portfolio hero: needs a >=3000px wide source image uploaded by the client.
+
+---
+# Update 2026-10-26 (later): Webflow reconnected, items worked on STAGING ONLY
+The Omodeo site (same id `6a963a7a923fd1c54e923def`) is now in workspace `6a97c4be08ec9a559a92be9e` and has live domains omodeo.studio / www.omodeo.studio.
+Published with `publishToWebflowSubdomain: true, customDomains: []` only. CMS item edits are staged (not published to the live domain by me).
+Registered-script-inlined custom code (site head/footer, Portfolio page footer) survived the transfer unchanged.
+
+## Done (Roundable -> check)
+- CMS (Portfolios): Lawnview / Kendrick / Paces Ferry copy per client; Lawnview location "Alpharetta, Georgia"; Kendrick/Paces location "Atlanta, Georgia"; Bellhaven/Ellard "Alpharetta, Georgia"; Arden/Arbor "Brookhaven, Georgia"; W. Pine "Buckhead, Atlanta"; Arden renamed "Arden Rd.".
+- New CMS field `Location (card, short)` (slug `location-card-short`): "Alpharetta, GA" etc., bound in Portfolio cards and the project detail hero ("Name | City, GA", italic).
+- Type Portfolios: "Kitchen Design" renamed "Kitchen Design & Custom Cabinetry" (also changes the filter tab); new type "Custom Cabinetry" used by Arden Rd.
+- Single-line CMS fields cannot hold line breaks, so the client writes "¶" as separator. Script in the Portfolio detail template page footer turns "¶" into paragraphs (intro support text) or lines (credits under Project Overview).
+- Long client texts were split: first paragraph in the big heading field, remaining paragraphs in the support text field.
+- Detail template: "by Omodeo" under the category, section tag "Work with Us", heading "Discuss your project with <i>Omodeo</i>".
+- CTA component: "custom millwork" -> "custom cabinetry".
+- Portfolio hero text replaced; combo `.body-weight-text.portfolio-hero-body` (34rem).
+- Footer links hover (`.button-omodeo`): underline fade + 0.35rem slide, 0.5s.
+
+## Needs the client
+- #1932 / #1951 "Reformat" (what exactly?), #1950 "Center" (what exactly?), #902 blurry hero (needs >=3000px source), #878 (waiting for client check).
+- Cards: client lines omit the style for most projects, kept the style on all cards ("| Modern/Transitional"); say if it should be hidden.
+
+## Rollback notes
+CMS: previous values are in the Webflow CMS history / this file's earlier output; template additions: remove elements "by Omodeo", `hero-title-row` (move h1 back), card separator + location paragraphs; footer `.button-omodeo` hover; page footer script on the detail template.
