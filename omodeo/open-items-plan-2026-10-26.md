@@ -64,3 +64,8 @@ Rollback: remove color on the combo above; put comma back inside the first itali
 Cause: global combo `.text-color-white.lower-white` has `display:flex`, so every text node / italic span in the CTA h2 became a flex item.
 Fix: `.heading-style-h5.text-cta.text-color-white.lower-white` -> `display:block`, `text-align:center` (heading flows as one centered paragraph).
 Staging only, not visually verified. Rollback: remove display/text-align from that combo.
+
+## #878 Our Work line — real cause (from client screen recording)
+Frame analysis: one 1px row at the bottom edge of the Our Work image is ~2x brighter than the overlaid image (un-overlaid raw photo; parallax-transformed image bleeds 1px past the area the overlay covers). Not a Roundable artifact.
+Fix (Designer styles, no code): `.reveal-container::after` = 2px strip, #1a1915, absolute bottom, z-index 1, pointer-events none (global class, so Home/About/Portfolio Our Work). `.reveal-container-wrapper.ow-stage-screen` bg #1a1410 -> #1a1915 (client colour rule).
+Staging only, not visually verified. Rollback: remove `::after` on `.reveal-container`; stage-screen bg back to #1a1410.
