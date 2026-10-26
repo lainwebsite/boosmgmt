@@ -50,3 +50,12 @@ Registered-script-inlined custom code (site head/footer, Portfolio page footer) 
 
 ## Rollback notes
 CMS: previous values are in the Webflow CMS history / this file's earlier output; template additions: remove elements "by Omodeo", `hero-title-row` (move h1 back), card separator + location paragraphs; footer `.button-omodeo` hover; page footer script on the detail template.
+
+## Update 2026-10-26 (CTA "Reformat", threads 1932 + 1951)
+Reference from agency (Rangga): CTA heading, centered, 3 lines, non-italic text dimmed, italic phrases white, comma not italic.
+CTA component (shared, so Portfolio + Lawnview + all pages):
+- `.heading-style-h5.text-cta.text-color-white.lower-white` color -> hsla(0,0%,100%,0.65) (non-italic dim; italic spans keep full white)
+- comma after "beginning a new home" moved out of the italic span
+- copy "custom cabinetry" kept (client copy), reference image still says "millwork"
+Staging only. Not visually verified (webflow.io not reachable from the session).
+Rollback: remove color on the combo above; put comma back inside the first italic span.
